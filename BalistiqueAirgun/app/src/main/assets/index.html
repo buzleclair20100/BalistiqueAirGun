@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur Balistique Airgun Avancé (MOA)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.6rem; text-align: center; color: #0f172a; margin-top: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; background: #f1f5f9; padding: 18px; border-radius: 8px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
+        input, select { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
+        .unit-group { display: flex; gap: 8px; }
+        .unit-group input { flex: 1; min-width: 0; }
+        .unit-group select { width: 100px; flex-shrink: 0; }
+        .stats { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .stat-card { text-align: center; }
+        .stat-label { font-size: 0.8rem; color: #1e40af; font-weight: bold; text-transform: uppercase; }
+        .stat-value { font-size: 1.25rem; font-weight: bold; color: #1d4ed8; }
+        .stat-card.highlight { background: #dbeafe; padding: 5px 12px; border-radius: 6px; }
+        .stat-card.highlight .stat-value { color: #0284c7; font-size: 1.35rem; }
+        .chart-container { position: relative; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; overflow: hidden; }
+        canvas { display: block; width: 100%; height: 480px; }
+        @media (max-width: 600px) { body { padding: 6px; } .container { padding: 12px; } h1 { font-size: 1.2rem; } canvas { height: 480px; } }
+        .note { font-size: 0.85rem; color: #64748b; margin-top: 10px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Simulateur Balistique Airgun (Correction MOA)</h1>
+
+    <div class="grid">
+        <div class="form-group">
+            <label for="caliber">Calibre</label>
+            <select id="caliber" onchange="calculer('vel')">
+                <option value="4.5">4.5 mm (.177)</option>
+                <option value="5.5" selected>5.5 mm (.22)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="shape">Profil du projectile</label>
+            <select id="shape" onchange="calculer('vel')">
+                <option value="flat">Diabolo Tête Plate (BC ~0.010)</option>
+                <option value="pointed">Diabolo Tête Pointue (BC ~0.018)</option>
+                <option value="domed" selected>Diabolo Tête Ronde (BC ~0.033)</option>
+                <option value="slug">Slug (BC ~0.075)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="mass">Masse du plomb</label>
+            <div class="unit-group">
+                <input type="number" id="mass" value="18.13" step="0.01" oninput="calculer('vel')">
+                <select id="unitMass" onchange="calculer('vel')">
+                    <option value="grains" selected>grains</option>
+                    <option value="g">grammes</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="energy">Énergie (Joules)</label>
+            <input type="number" id="energy" value="45.8" step="0.1" oninput="calculer('joules')">
+        </div>
+
+        <div class="form-group">
+            <label for="velocity">Vitesse initiale (V0)</label>
+            <div class="unit-group">
+                <input type="number" id="velocity" value="280" step="1" oninput="calculer('vel')">
+                <select id="unitVel" onchange="calculer('vel')">
+                    <option value="ms" selected>m/s</option>
+                    <option value="fps">FPS</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="scopeHeight">Hauteur Lunette / Canon (cm)</label>
+            <input type="number" id="scopeHeight" value="4.0" step="0.1" oninput="calculer('vel')">
+        </div>
+
+        <div class="form-group">
+            <label for="shotAngle">Angle de tir (°)</label>
+            <input type="number" id="shotAngle" value="0.5" step="0.1" oninput="calculer('vel')">
+        </div>
+
+        <div class="form-group">
+            <label for="zeroDist">Distance de Zéro (m)</label>
+            <input type="number" id="zeroDist" value="25" step="1" oninput="calculer('vel')">
+        </div>
+
+        <div class="form-group">
+            <label for="targetDist">Distance de la Cible (m)</label>
+            <input type="number" id="targetDist" value="212" step="1" oninput="calculer('vel')">
+        </div>
+
+        <div class="form-group">
+            <label for="maxDist">Distance Max Graphique (m)</label>
+            <input type="number" id="maxDist" value="250" step="10" oninput="calculer('vel')">
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">Masse du plomb</div>
+            <div class="stat-value" id="resMassCombined">0 gr / 0 g</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Énergie Initiale</div>
+            <div class="stat-value" id="resE0">0 J</div>
+        </div>
+        <div class="stat-card highlight">
+            <div class="stat-label">Correction à viser à la cible</div>
+            <div class="stat-value" id="resAimCorrection">0 cm</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Correction en MOA (Clics 1/4)</div>
+            <div class="stat-value" id="resMoa">0 MOA</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Vitesse à la cible</div>
+            <div class="stat-value" id="resVTarget">0 m/s</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Temps de vol</div>
+            <div class="stat-value" id="resTTarget">0 s</div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="trajectoryCanvas"></canvas>
+    </div>
+    <div class="note">* Note : 1 MOA vaut environ 2,91 cm à 100 mètres. Les clics indiqués sont basés sur une tourelle standard de 1/4 MOA par clic.</div>
+</div>
+
+<script>
+    const bcTable = {
+        "4.5": { flat: 0.010, pointed: 0.014, domed: 0.021, slug: 0.045 },
+        "5.5": { flat: 0.012, pointed: 0.018, domed: 0.033, slug: 0.075 }
+    };
+
+    function calculer(sourceChanged = 'vel') {
+        const caliber = document.getElementById('caliber').value;
+        const shape = document.getElementById('shape').value;
+        let massVal = parseFloat(document.getElementById('mass').value);
+        const unitMass = document.getElementById('unitMass').value;
+        
+        let velInput = document.getElementById('velocity');
+        let energyInput = document.getElementById('energy');
+        const unitVel = document.getElementById('unitVel').value;
+
+        const zeroDist = parseFloat(document.getElementById('zeroDist').value) || 25;
+        const targetDist = parseFloat(document.getElementById('targetDist').value) || 212;
+        const maxDist = parseFloat(document.getElementById('maxDist').value) || 250;
+        const userAngleDeg = parseFloat(document.getElementById('shotAngle').value) || 0;
+        const scopeHeightVal = parseFloat(document.getElementById('scopeHeight').value);
+        const scopeH_m = (!isNaN(scopeHeightVal) && scopeHeightVal >= 0) ? scopeHeightVal / 100 : 0.04;
+
+        if (isNaN(massVal) || massVal <= 0) return;
+
+        const massKg = (unitMass === "grains") ? massVal * 0.00006479891 : massVal / 1000;
+
+        let v0 = 0, e0 = 0;
+
+        if (sourceChanged === 'joules') {
+            e0 = parseFloat(energyInput.value);
+            if (isNaN(e0) || e0 <= 0) return;
+            v0 = Math.sqrt((2 * e0) / massKg);
+            velInput.value = (unitVel === "fps") ? (v0 / 0.3048).toFixed(0) : v0.toFixed(1);
+        } else {
+            let velVal = parseFloat(velInput.value);
+            if (isNaN(velVal) || velVal <= 0) return;
+            v0 = (unitVel === "fps") ? velVal * 0.3048 : velVal;
+            e0 = 0.5 * massKg * Math.pow(v0, 2);
+            energyInput.value = e0.toFixed(1);
+        }
+
+        const bc = bcTable[caliber][shape];
+        const rho = 1.225;
+        const g = 9.81;
+
+        const area = Math.PI * Math.pow((parseFloat(caliber)/1000)/2, 2);
+        const Cd = 0.5 / (bc * 100); 
+
+        const t_zero = zeroDist / v0;
+        const y_drop_zero = 0.5 * g * Math.pow(t_zero, 2);
+        const zeroTheta = Math.atan((y_drop_zero + scopeH_m) / zeroDist);
+        
+        const totalAngleRad = zeroTheta + (userAngleDeg * Math.PI / 180);
+
+        const trajectoryPoints = [];
+
+        let dt = 0.0005; 
+        let x = 0, y = -scopeH_m, time = 0;
+        let vx = v0 * Math.cos(totalAngleRad);
+        let vy = v0 * Math.sin(totalAngleRad);
+
+        let vTarget = 0, tTarget = 0, yTargetCm = 0;
+        let stepCount = 0;
+        let foundTarget = false;
+
+        trajectoryPoints.push({ x: 0, y: y * 100 });
+
+        while (x <= maxDist && stepCount < 500000) {
+            stepCount++;
+            let v = Math.sqrt(vx * vx + vy * vy);
+            
+            let Fd = 0.5 * rho * v * v * Cd * area;
+            let ax = -(Fd / massKg) * (vx / v);
+            let ay = -g - (Fd / massKg) * (vy / v);
+
+            vx += ax * dt;
+            vy += ay * dt;
+            x += vx * dt;
+            y += vy * dt;
+            time += dt;
+
+            if (!foundTarget && x >= targetDist) {
+                foundTarget = true;
+                vTarget = v;
+                tTarget = time;
+                yTargetCm = y * 100;
+            }
+
+            if (stepCount % 10 === 0) {
+                trajectoryPoints.push({ x: x, y: y * 100 });
+            }
+
+            if (vx <= 1) break; 
+        }
+
+        if (!foundTarget) {
+            vTarget = Math.sqrt(vx * vx + vy * vy);
+            tTarget = time;
+            yTargetCm = y * 100;
+        }
+
+        const aimCorrectionCm = -yTargetCm; 
+        const moaPerCm = 1 / (targetDist * 0.0290888);
+        const moaVal = aimCorrectionCm * moaPerCm;
+        const clicks14 = Math.round(moaVal * 4);
+
+        const valGr = (massKg / 0.00006479891).toFixed(2);
+        const valG = (massKg * 1000).toFixed(3);
+        document.getElementById('resMassCombined').innerText = `${valGr} gr / ${valG} g`;
+        document.getElementById('resE0').innerText = `${e0.toFixed(1)} J`;
+        
+        if (Math.abs(aimCorrectionCm) >= 100) {
+            document.getElementById('resAimCorrection').innerText = `${(aimCorrectionCm / 100).toFixed(2)} m ${aimCorrectionCm > 0 ? 'plus HAUT' : 'plus BAS'}`;
+        } else {
+            document.getElementById('resAimCorrection').innerText = `${aimCorrectionCm.toFixed(1)} cm ${aimCorrectionCm > 0 ? 'plus HAUT' : 'plus BAS'}`;
+        }
+
+        document.getElementById('resMoa').innerText = `${moaVal.toFixed(1)} MOA (${clicks14 > 0 ? '+' : ''}${clicks14} clics)`;
+        document.getElementById('resVTarget').innerText = `${vTarget.toFixed(1)} m/s`;
+        document.getElementById('resTTarget').innerText = `${tTarget.toFixed(2)} s`;
+
+        tracerGraphique(trajectoryPoints, maxDist, targetDist, yTargetCm);
+    }
+
+    function tracerGraphique(points, maxDist, targetDist, yTargetCm) {
+        const canvas = document.getElementById('trajectoryCanvas');
+        const rect = canvas.getBoundingClientRect();
+        
+        // Ajustement netteté écran retina/haute résolution
+        canvas.width = rect.width * window.devicePixelRatio || 1150;
+        canvas.height = 480 * window.devicePixelRatio || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+
+        const w = rect.width;
+        const h = 480;
+        const padL = 70, padR = 30, padT = 30, padB = 40;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        // Calcul des bornes min/max en Y
+        let minY = 0, maxY = 0;
+        points.forEach(p => {
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        });
+
+        // Marge de 10% sur les axes
+        minY = Math.floor(minY * 1.15);
+        maxY = Math.max(20, Math.ceil(maxY * 1.15));
+        if (minY === maxY) { minY = -10; maxY = 10; }
+
+        function toScreenX(x) { return padL + (x / maxDist) * plotW; }
+        function toScreenY(y) { return padT + ((maxY - y) / (maxY - minY)) * plotH; }
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Grille et graduation Y
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px sans-serif';
+        ctx.lineWidth = 1;
+
+        const nbStepsY = 8;
+        for (let i = 0; i <= nbStepsY; i++) {
+            const valY = minY + ((maxY - minY) * i) / nbStepsY;
+            const sy = toScreenY(valY);
+            ctx.beginPath();
+            ctx.moveTo(padL, sy);
+            ctx.lineTo(w - padR, sy);
+            ctx.stroke();
+
+            ctx.textAlign = 'right';
+            ctx.fillText(Math.round(valY) + ' cm', padL - 8, sy + 4);
+        }
+
+        // Grille et graduation X
+        const stepX = maxDist <= 100 ? 10 : (maxDist <= 250 ? 25 : 50);
+        for (let vx = 0; vx <= maxDist; vx += stepX) {
+            const sx = toScreenX(vx);
+            ctx.beginPath();
+            ctx.moveTo(sx, padT);
+            ctx.lineTo(sx, h - padB);
+            ctx.stroke();
+
+            ctx.textAlign = 'center';
+            ctx.fillText(vx + ' m', sx, h - padB + 18);
+        }
+
+        // Ligne de visée (Y = 0)
+        const zeroYScreen = toScreenY(0);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(padL, zeroYScreen);
+        ctx.lineTo(w - padR, zeroYScreen);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Courbe de trajectoire
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        points.forEach((p, idx) => {
+            const sx = toScreenX(p.x);
+            const sy = toScreenY(p.y);
+            if (idx === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+        });
+        ctx.stroke();
+
+        // Point impact à la cible
+        const tX = toScreenX(targetDist);
+        const tY = toScreenY(yTargetCm);
+        if (targetDist <= maxDist) {
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(tX, tY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Label impact
+            ctx.fillStyle = '#991b1b';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = targetDist > maxDist * 0.8 ? 'right' : 'left';
+            ctx.fillText(`Cible: ${yTargetCm.toFixed(1)} cm`, tX + (targetDist > maxDist * 0.8 ? -10 : 10), tY - 10);
+        }
+
+        // Légende
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(w - 220, 10, 15, 4);
+        ctx.fillStyle = '#1e293b';
+        ctx.textAlign = 'left';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Trajectoire plomb', w - 195, 15);
+
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(w - 220, 25);
+        ctx.lineTo(w - 205, 25);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillText('Ligne de visée (0)', w - 195, 29);
+    }
+
+    window.addEventListener('resize', () => calculer('vel'));
+    window.onload = function() { calculer('vel'); };
+</script>
+
+</body>
+</html>
