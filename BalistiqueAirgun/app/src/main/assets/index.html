@@ -5,29 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculateur Balistique Airgun Avancé (MOA)</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.6rem; text-align: center; color: #0f172a; margin-top: 0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; background: #f1f5f9; padding: 18px; border-radius: 8px; margin-bottom: 20px; }
+        :root {
+            color-scheme: light;
+            --bg: #f8fafc; --text: #1e293b; --card: #fff; --title: #0f172a; --shadow: rgba(0,0,0,0.1);
+            --panel: #f1f5f9; --label: #475569; --border: #cbd5e1; --input-bg: #fff;
+            --stats-bg: #eff6ff; --stats-border: #bfdbfe; --stat-label: #1e40af; --stat-value: #1d4ed8;
+            --hl-bg: #dbeafe; --hl-value: #0284c7; --chart-bg: #fff; --note: #64748b;
+            --grid: #e2e8f0; --axis: #64748b; --curve: #2563eb; --sight: #ef4444; --impact: #dc2626; --impact-text: #991b1b;
+        }
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0b1120; --text: #e2e8f0; --card: #162033; --title: #f1f5f9; --shadow: rgba(0,0,0,0.5);
+            --panel: #1e293b; --label: #94a3b8; --border: #334155; --input-bg: #0f172a;
+            --stats-bg: #172554; --stats-border: #1e3a8a; --stat-label: #93c5fd; --stat-value: #60a5fa;
+            --hl-bg: #1e3a8a; --hl-value: #38bdf8; --chart-bg: #0f172a; --note: #94a3b8;
+            --grid: #243247; --axis: #94a3b8; --curve: #60a5fa; --sight: #f87171; --impact: #f87171; --impact-text: #fca5a5;
+        }
+        #themeToggle { position: fixed; top: 10px; right: 10px; z-index: 10; padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px; background: var(--card); color: var(--text); font-size: 0.85rem; cursor: pointer; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px var(--shadow); }
+        h1 { font-size: 1.6rem; text-align: center; color: var(--title); margin-top: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; background: var(--panel); padding: 18px; border-radius: 8px; margin-bottom: 20px; }
         .form-group { display: flex; flex-direction: column; }
-        label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
-        input, select { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
+        label { font-size: 0.85rem; font-weight: 600; color: var(--label); margin-bottom: 5px; }
+        input, select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: var(--input-bg); color: var(--text); }
         .unit-group { display: flex; gap: 8px; }
         .unit-group input { flex: 1; min-width: 0; }
         .unit-group select { width: 100px; flex-shrink: 0; }
-        .stats { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .stats { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; background: var(--stats-bg); border: 1px solid var(--stats-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .stat-card { text-align: center; }
-        .stat-label { font-size: 0.8rem; color: #1e40af; font-weight: bold; text-transform: uppercase; }
-        .stat-value { font-size: 1.25rem; font-weight: bold; color: #1d4ed8; }
-        .stat-card.highlight { background: #dbeafe; padding: 5px 12px; border-radius: 6px; }
-        .stat-card.highlight .stat-value { color: #0284c7; font-size: 1.35rem; }
-        .chart-container { position: relative; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; overflow: hidden; }
-        canvas { display: block; width: 100%; height: 480px; }
+        .stat-label { font-size: 0.8rem; color: var(--stat-label); font-weight: bold; text-transform: uppercase; }
+        .stat-value { font-size: 1.25rem; font-weight: bold; color: var(--stat-value); }
+        .stat-card.highlight { background: var(--hl-bg); padding: 5px 12px; border-radius: 6px; }
+        .stat-card.highlight .stat-value { color: var(--hl-value); font-size: 1.35rem; }
+        .chart-container { position: relative; width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--chart-bg); overflow: hidden; }
+        canvas { display: block; width: 100%; height: 480px; touch-action: none; }
+        #zoomReset { position: absolute; top: 6px; left: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--text); font-size: 0.8rem; cursor: pointer; display: none; }
         @media (max-width: 600px) { body { padding: 6px; } .container { padding: 12px; } h1 { font-size: 1.2rem; } canvas { height: 480px; } }
-        .note { font-size: 0.85rem; color: #64748b; margin-top: 10px; font-style: italic; }
+        .note { font-size: 0.85rem; color: var(--note); margin-top: 10px; font-style: italic; }
     </style>
 </head>
 <body>
+
+<button id="themeToggle" type="button" onclick="basculerTheme()" aria-label="Changer de thème"></button>
 
 <div class="container">
     <h1>Simulateur Balistique Airgun (Correction MOA)</h1>
@@ -133,7 +153,9 @@
 
     <div class="chart-container">
         <canvas id="trajectoryCanvas"></canvas>
+        <button id="zoomReset" type="button" onclick="resetZoom()">Réinitialiser le zoom</button>
     </div>
+    <div class="note">Graphique : pincer pour zoomer, glisser pour déplacer, double-tap pour réinitialiser.</div>
     <div class="note">* Note : 1 MOA vaut environ 2,91 cm à 100 mètres. Les clics indiqués sont basés sur une tourelle standard de 1/4 MOA par clic.</div>
 </div>
 
@@ -262,7 +284,10 @@
         tracerGraphique(trajectoryPoints, maxDist, targetDist, yTargetCm);
     }
 
+    let derniersArgs = null, vue = null, carte = null;
+
     function tracerGraphique(points, maxDist, targetDist, yTargetCm) {
+        derniersArgs = [points, maxDist, targetDist, yTargetCm];
         const canvas = document.getElementById('trajectoryCanvas');
         const rect = canvas.getBoundingClientRect();
         
@@ -290,20 +315,35 @@
         maxY = Math.max(20, Math.ceil(maxY * 1.15));
         if (minY === maxY) { minY = -10; maxY = 10; }
 
-        function toScreenX(x) { return padL + (x / maxDist) * plotW; }
+        const base = { x0: 0, x1: maxDist, y0: minY, y1: maxY };
+        carte = { base, padL, padT, plotW, plotH };
+        let minX = 0, maxX = maxDist;
+        if (vue) {
+            vue = clampVue(vue, base);
+            minX = vue.x0; maxX = vue.x1; minY = vue.y0; maxY = vue.y1;
+        }
+        carte.x0 = minX; carte.x1 = maxX; carte.y0 = minY; carte.y1 = maxY;
+        document.getElementById('zoomReset').style.display = vue ? 'block' : 'none';
+
+        function toScreenX(x) { return padL + ((x - minX) / (maxX - minX)) * plotW; }
         function toScreenY(y) { return padT + ((maxY - y) / (maxY - minY)) * plotH; }
+        function pas(range, n) {
+            const brut = range / n, mag = Math.pow(10, Math.floor(Math.log10(brut))), r = brut / mag;
+            return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * mag;
+        }
 
         ctx.clearRect(0, 0, w, h);
+        const cs = getComputedStyle(document.documentElement);
+        const C = n => cs.getPropertyValue(n).trim();
 
         // Grille et graduation Y
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.fillStyle = '#64748b';
+        ctx.strokeStyle = C('--grid');
+        ctx.fillStyle = C('--axis');
         ctx.font = '11px sans-serif';
         ctx.lineWidth = 1;
 
-        const nbStepsY = 8;
-        for (let i = 0; i <= nbStepsY; i++) {
-            const valY = minY + ((maxY - minY) * i) / nbStepsY;
+        const stepY = pas(maxY - minY, 8);
+        for (let valY = Math.ceil(minY / stepY) * stepY; valY <= maxY + 1e-9; valY += stepY) {
             const sy = toScreenY(valY);
             ctx.beginPath();
             ctx.moveTo(padL, sy);
@@ -311,12 +351,12 @@
             ctx.stroke();
 
             ctx.textAlign = 'right';
-            ctx.fillText(Math.round(valY) + ' cm', padL - 8, sy + 4);
+            ctx.fillText(+valY.toFixed(2) + ' cm', padL - 8, sy + 4);
         }
 
         // Grille et graduation X
-        const stepX = maxDist <= 100 ? 10 : (maxDist <= 250 ? 25 : 50);
-        for (let vx = 0; vx <= maxDist; vx += stepX) {
+        const stepX = pas(maxX - minX, 10);
+        for (let vx = Math.ceil(minX / stepX) * stepX; vx <= maxX + 1e-9; vx += stepX) {
             const sx = toScreenX(vx);
             ctx.beginPath();
             ctx.moveTo(sx, padT);
@@ -324,12 +364,16 @@
             ctx.stroke();
 
             ctx.textAlign = 'center';
-            ctx.fillText(vx + ' m', sx, h - padB + 18);
+            ctx.fillText(+vx.toFixed(2) + ' m', sx, h - padB + 18);
         }
 
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(padL, padT, plotW, plotH);
+        ctx.clip();
         // Ligne de visée (Y = 0)
         const zeroYScreen = toScreenY(0);
-        ctx.strokeStyle = '#ef4444';
+        ctx.strokeStyle = C('--sight');
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 6]);
         ctx.beginPath();
@@ -339,7 +383,7 @@
         ctx.setLineDash([]);
 
         // Courbe de trajectoire
-        ctx.strokeStyle = '#2563eb';
+        ctx.strokeStyle = C('--curve');
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         points.forEach((p, idx) => {
@@ -353,28 +397,29 @@
         // Point impact à la cible
         const tX = toScreenX(targetDist);
         const tY = toScreenY(yTargetCm);
-        if (targetDist <= maxDist) {
-            ctx.fillStyle = '#dc2626';
+        if (targetDist <= maxX && targetDist >= minX) {
+            ctx.fillStyle = C('--impact');
             ctx.beginPath();
             ctx.arc(tX, tY, 6, 0, 2 * Math.PI);
             ctx.fill();
 
             // Label impact
-            ctx.fillStyle = '#991b1b';
+            ctx.fillStyle = C('--impact-text');
             ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = targetDist > maxDist * 0.8 ? 'right' : 'left';
-            ctx.fillText(`Cible: ${yTargetCm.toFixed(1)} cm`, tX + (targetDist > maxDist * 0.8 ? -10 : 10), tY - 10);
+            ctx.textAlign = targetDist > minX + (maxX - minX) * 0.8 ? 'right' : 'left';
+            ctx.fillText(`Cible: ${yTargetCm.toFixed(1)} cm`, tX + (targetDist > minX + (maxX - minX) * 0.8 ? -10 : 10), tY - 10);
         }
 
+        ctx.restore();
         // Légende
-        ctx.fillStyle = '#2563eb';
+        ctx.fillStyle = C('--curve');
         ctx.fillRect(w - 220, 10, 15, 4);
-        ctx.fillStyle = '#1e293b';
+        ctx.fillStyle = C('--text');
         ctx.textAlign = 'left';
         ctx.font = '12px sans-serif';
         ctx.fillText('Trajectoire plomb', w - 195, 15);
 
-        ctx.strokeStyle = '#ef4444';
+        ctx.strokeStyle = C('--sight');
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -384,6 +429,81 @@
         ctx.setLineDash([]);
         ctx.fillText('Ligne de visée (0)', w - 195, 29);
     }
+
+    // --- Zoom / déplacement tactile (pincer, glisser, molette, double-tap) ---
+    function clampVue(v, b) {
+        let w = Math.min(v.x1 - v.x0, b.x1 - b.x0), h = Math.min(v.y1 - v.y0, b.y1 - b.y0);
+        w = Math.max(w, (b.x1 - b.x0) / 50); h = Math.max(h, (b.y1 - b.y0) / 50);
+        const x0 = Math.min(Math.max(v.x0, b.x0), b.x1 - w);
+        const y0 = Math.min(Math.max(v.y0, b.y0), b.y1 - h);
+        return { x0, x1: x0 + w, y0, y1: y0 + h };
+    }
+    function redessiner() { if (derniersArgs) tracerGraphique(...derniersArgs); }
+    function resetZoom() { vue = null; redessiner(); }
+    function vueCourante() { return { x0: carte.x0, x1: carte.x1, y0: carte.y0, y1: carte.y1 }; }
+    function pixelVersDonnees(px, py) {
+        return {
+            x: carte.x0 + ((px - carte.padL) / carte.plotW) * (carte.x1 - carte.x0),
+            y: carte.y1 - ((py - carte.padT) / carte.plotH) * (carte.y1 - carte.y0)
+        };
+    }
+    function zoomer(facteur, px, py) {
+        if (!carte) return;
+        const v = vueCourante(), c = pixelVersDonnees(px, py);
+        vue = clampVue({
+            x0: c.x - (c.x - v.x0) / facteur, x1: c.x + (v.x1 - c.x) / facteur,
+            y0: c.y - (c.y - v.y0) / facteur, y1: c.y + (v.y1 - c.y) / facteur
+        }, carte.base);
+        if (vue.x1 - vue.x0 >= carte.base.x1 - carte.base.x0 - 1e-9 && vue.y1 - vue.y0 >= carte.base.y1 - carte.base.y0 - 1e-9) vue = null;
+        redessiner();
+    }
+    function deplacer(dpx, dpy) {
+        if (!carte || !vue) return;
+        const v = vueCourante();
+        const dx = dpx / carte.plotW * (v.x1 - v.x0), dy = dpy / carte.plotH * (v.y1 - v.y0);
+        vue = clampVue({ x0: v.x0 - dx, x1: v.x1 - dx, y0: v.y0 + dy, y1: v.y1 + dy }, carte.base);
+        redessiner();
+    }
+    (function initZoom() {
+        const cv = document.getElementById('trajectoryCanvas');
+        const ptrs = new Map();
+        let distPrec = 0, dernierTap = 0;
+        const local = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+        const centre = () => { const a = [...ptrs.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
+        cv.addEventListener('pointerdown', e => {
+            cv.setPointerCapture(e.pointerId);
+            ptrs.set(e.pointerId, local(e));
+            if (ptrs.size === 2) distPrec = centre().d;
+            if (ptrs.size === 1) {
+                const now = Date.now();
+                if (now - dernierTap < 300) { resetZoom(); dernierTap = 0; } else dernierTap = now;
+            }
+        });
+        cv.addEventListener('pointermove', e => {
+            if (!ptrs.has(e.pointerId)) return;
+            const prev = ptrs.get(e.pointerId), cur = local(e);
+            if (ptrs.size === 1) {
+                if (Math.hypot(cur.x - prev.x, cur.y - prev.y) > 2) dernierTap = 0;
+                ptrs.set(e.pointerId, cur);
+                deplacer(cur.x - prev.x, cur.y - prev.y);
+            } else if (ptrs.size === 2) {
+                const avant = centre();
+                ptrs.set(e.pointerId, cur);
+                const apres = centre();
+                if (distPrec > 0 && apres.d > 0) zoomer(apres.d / distPrec, apres.x, apres.y);
+                deplacer(apres.x - avant.x, apres.y - avant.y);
+                distPrec = apres.d;
+            }
+        });
+        const fin = e => { ptrs.delete(e.pointerId); distPrec = 0; };
+        cv.addEventListener('pointerup', fin);
+        cv.addEventListener('pointercancel', fin);
+        cv.addEventListener('wheel', e => {
+            e.preventDefault();
+            const p = local(e);
+            zoomer(e.deltaY < 0 ? 1.2 : 1 / 1.2, p.x, p.y);
+        }, { passive: false });
+    })();
 
     window.addEventListener('resize', () => calculer('vel'));
        const CHAMPS = ['caliber','shape','mass','unitMass','energy','velocity','unitVel','scopeHeight','shotAngle','zeroDist','targetDist','maxDist'];
@@ -402,7 +522,21 @@
     }
     document.addEventListener('input', sauver);
     document.addEventListener('change', sauver);
-    window.onload = function() { charger(); calculer('vel'); };
+    function themeActuel() {
+        try { const s = localStorage.getItem('balistique_theme'); if (s === 'dark' || s === 'light') return s; } catch (e) {}
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function appliquerTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        document.getElementById('themeToggle').textContent = t === 'dark' ? '☀️ Clair' : '🌙 Sombre';
+    }
+    function basculerTheme() {
+        const t = themeActuel() === 'dark' ? 'light' : 'dark';
+        try { localStorage.setItem('balistique_theme', t); } catch (e) {}
+        appliquerTheme(t);
+        calculer('vel');
+    }
+    window.onload = function() { appliquerTheme(themeActuel()); charger(); calculer('vel'); };
 </script>
 
 </body>
