@@ -386,7 +386,23 @@
     }
 
     window.addEventListener('resize', () => calculer('vel'));
-    window.onload = function() { calculer('vel'); };
+       const CHAMPS = ['caliber','shape','mass','unitMass','energy','velocity','unitVel','scopeHeight','shotAngle','zeroDist','targetDist','maxDist'];
+    function sauver() {
+        try {
+            const d = {};
+            CHAMPS.forEach(id => d[id] = document.getElementById(id).value);
+            localStorage.setItem('balistique', JSON.stringify(d));
+        } catch (e) {}
+    }
+    function charger() {
+        try {
+            const d = JSON.parse(localStorage.getItem('balistique') || '{}');
+            CHAMPS.forEach(id => { if (d[id] !== undefined) document.getElementById(id).value = d[id]; });
+        } catch (e) {}
+    }
+    document.addEventListener('input', sauver);
+    document.addEventListener('change', sauver);
+    window.onload = function() { charger(); calculer('vel'); };
 </script>
 
 </body>
