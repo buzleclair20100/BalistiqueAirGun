@@ -26,10 +26,12 @@
         h1 { font-size: 1.6rem; text-align: center; color: var(--title); margin-top: 0; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; background: var(--panel); padding: 18px; border-radius: 8px; margin-bottom: 20px; }
         .top-row { display: flex; gap: 15px; align-items: stretch; margin-bottom: 20px; }
-        .top-row .grid { flex: 1; min-width: 0; margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-        .side-panel { flex: 0 0 180px; display: flex; flex-direction: column; gap: 10px; background: var(--panel); padding: 18px; border-radius: 8px; }
-        .side-panel button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 0.9rem; cursor: pointer; }
-        @media (max-width: 800px) { .top-row { flex-direction: column; } .side-panel { flex: none; flex-direction: row; flex-wrap: wrap; } }
+        .top-row .grid { flex: 1; min-width: 0; margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+        .side-panel { flex: 0 0 150px; display: flex; flex-direction: column; justify-content: center; gap: 10px; background: var(--panel); padding: 12px; border-radius: 8px; }
+        .side-panel button { padding: 10px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 0.9rem; cursor: pointer; }
+        .side-panel button.active { background: var(--hl-bg); border-color: var(--hl-value); color: var(--hl-value); font-weight: 600; }
+        .mode-portee .visee-only, .mode-visee .portee-only { display: none; }
+        @media (max-width: 600px) { .side-panel { flex-basis: 120px; padding: 8px; } .top-row .grid { padding: 12px; } }
         .form-group { display: flex; flex-direction: column; }
         label { font-size: 0.85rem; font-weight: 600; color: var(--label); margin-bottom: 5px; }
         input, select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: var(--input-bg); color: var(--text); }
@@ -43,18 +45,17 @@
         .stat-card.highlight { background: var(--hl-bg); padding: 5px 12px; border-radius: 6px; }
         .stat-card.highlight .stat-value { color: var(--hl-value); font-size: 1.35rem; }
         .chart-container { position: relative; width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--chart-bg); overflow: hidden; }
-        canvas { display: block; width: 100%; height: 480px; touch-action: none; }
+        canvas { display: block; width: 100%; height: 480px; touch-action: pan-y; }
         #zoomReset { position: absolute; top: 6px; left: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--text); font-size: 0.8rem; cursor: pointer; display: none; }
         @media (max-width: 600px) { body { padding: 6px; } .container { padding: 12px; } h1 { font-size: 1.2rem; } canvas { height: 480px; } }
         .note { font-size: 0.85rem; color: var(--note); margin-top: 10px; font-style: italic; }
     </style>
 </head>
-<body>
+<body class="mode-visee">
 
 <div class="container">
-    <h1>Simulateur Balistique Airgun (Correction MOA)</h1>
+    <h1 id="titre">Simulateur Balistique Airgun (Correction MOA)</h1>
 
-    <div class="top-row">
     <div class="grid">
         <div class="form-group">
             <label for="caliber">Calibre</label>
@@ -75,19 +76,11 @@
         </div>
 
         <div class="form-group">
-            <label for="mass">Masse du plomb</label>
+            <label for="massG">Masse du plomb (grammes | grains)</label>
             <div class="unit-group">
-                <input type="number" id="mass" value="18.13" step="0.01" oninput="calculer('vel')">
-                <select id="unitMass" onchange="calculer('vel')">
-                    <option value="grains" selected>grains</option>
-                    <option value="g">grammes</option>
-                </select>
+                <input type="number" id="massG" value="1.175" step="0.001" aria-label="Masse en grammes" oninput="syncMasse('g')">
+                <input type="number" id="massGr" value="18.13" step="0.01" aria-label="Masse en grains" oninput="syncMasse('gr')">
             </div>
-        </div>
-
-        <div class="form-group">
-            <label for="energy">Énergie (Joules)</label>
-            <input type="number" id="energy" value="45.8" step="0.1" oninput="calculer('joules')">
         </div>
 
         <div class="form-group">
@@ -102,6 +95,15 @@
         </div>
 
         <div class="form-group">
+            <label for="energy">Énergie (Joules)</label>
+            <input type="number" id="energy" value="45.8" step="0.1" oninput="calculer('joules')">
+        </div>
+
+    </div>
+
+    <div class="top-row">
+    <div class="grid">
+        <div class="form-group visee-only">
             <label for="scopeHeight">Hauteur Lunette / Canon (cm)</label>
             <input type="number" id="scopeHeight" value="4.0" step="0.1" oninput="calculer('vel')">
         </div>
@@ -111,34 +113,35 @@
             <input type="number" id="shotAngle" value="0.5" step="0.1" oninput="calculer('vel')">
         </div>
 
-        <div class="form-group">
+        <div class="form-group visee-only">
             <label for="zeroDist">Distance de Zéro (m)</label>
             <input type="number" id="zeroDist" value="25" step="1" oninput="calculer('vel')">
         </div>
 
-        <div class="form-group">
+        <div class="form-group visee-only">
             <label for="targetDist">Distance de la Cible (m)</label>
             <input type="number" id="targetDist" value="212" step="1" oninput="calculer('vel')">
         </div>
 
-        <div class="form-group">
+        <div class="form-group visee-only">
             <label for="maxDist">Distance Max Graphique (m)</label>
             <input type="number" id="maxDist" value="250" step="10" oninput="calculer('vel')">
         </div>
     </div>
     <div class="side-panel" id="sidePanel">
+        <button id="btnVisee" type="button" onclick="setMode('visee')">🎯 Visée</button>
+        <button id="btnPortee" type="button" onclick="setMode('portee')">📏 Portée</button>
         <button id="themeToggle" type="button" onclick="basculerTheme()" aria-label="Changer de thème"></button>
-        <!-- Encart réservé aux futurs boutons -->
     </div>
     </div>
 
-    <div class="stats">
+    <div class="stats visee-only">
         <div class="stat-card">
             <div class="stat-label">Masse du plomb</div>
             <div class="stat-value" id="resMassCombined">0 gr / 0 g</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Énergie Initiale</div>
+            <div class="stat-label">Énergie initiale / cible</div>
             <div class="stat-value" id="resE0">0 J</div>
         </div>
         <div class="stat-card highlight">
@@ -159,12 +162,36 @@
         </div>
     </div>
 
+    <div class="stats portee-only">
+        <div class="stat-card highlight">
+            <div class="stat-label">Portée du plomb</div>
+            <div class="stat-value" id="resRange">0 m</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Temps de vol</div>
+            <div class="stat-value" id="resRangeTime">0 s</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Hauteur max</div>
+            <div class="stat-value" id="resApex">0 m</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Vitesse à l'impact</div>
+            <div class="stat-value" id="resVImpact">0 m/s</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Énergie à l'impact</div>
+            <div class="stat-value" id="resEImpact">0 J</div>
+        </div>
+    </div>
+
     <div class="chart-container">
         <canvas id="trajectoryCanvas"></canvas>
         <button id="zoomReset" type="button" onclick="resetZoom()">Réinitialiser le zoom</button>
     </div>
     <div class="note">Graphique : pincer pour zoomer, glisser pour déplacer, double-tap pour réinitialiser.</div>
-    <div class="note">* Note : 1 MOA vaut environ 2,91 cm à 100 mètres. Les clics indiqués sont basés sur une tourelle standard de 1/4 MOA par clic.</div>
+    <div class="note portee-only">Portée calculée tir depuis le canon (hauteur 0) jusqu'au retour au sol. Astuce : essayez un angle de 30 à 35° pour la portée maximale.</div>
+    <div class="note visee-only">* Note : 1 MOA vaut environ 2,91 cm à 100 mètres. Les clics indiqués sont basés sur une tourelle standard de 1/4 MOA par clic.</div>
 </div>
 
 <script>
@@ -173,12 +200,23 @@
         "5.5": { flat: 0.012, pointed: 0.018, domed: 0.033, slug: 0.075 }
     };
 
+    // Masse saisie en grains ou en grammes : l'autre champ est converti automatiquement.
+    function syncMasse(source) {
+        const gr = document.getElementById('massGr'), g = document.getElementById('massG');
+        const val = parseFloat((source === 'gr' ? gr : g).value);
+        if (!isNaN(val)) {
+            if (source === 'gr') g.value = +(val * 0.06479891).toFixed(3);
+            else gr.value = +(val / 0.06479891).toFixed(2);
+        }
+        // Les joules restent fixes : changer la masse recalcule la vitesse initiale.
+        calculer('joules');
+    }
+
     function calculer(sourceChanged = 'vel') {
         const caliber = document.getElementById('caliber').value;
         const shape = document.getElementById('shape').value;
-        let massVal = parseFloat(document.getElementById('mass').value);
-        const unitMass = document.getElementById('unitMass').value;
-        
+        const massVal = parseFloat(document.getElementById('massGr').value);
+
         let velInput = document.getElementById('velocity');
         let energyInput = document.getElementById('energy');
         const unitVel = document.getElementById('unitVel').value;
@@ -192,7 +230,7 @@
 
         if (isNaN(massVal) || massVal <= 0) return;
 
-        const massKg = (unitMass === "grains") ? massVal * 0.00006479891 : massVal / 1000;
+        const massKg = massVal * 0.00006479891;
 
         let v0 = 0, e0 = 0;
 
@@ -214,7 +252,9 @@
         const g = 9.81;
 
         const area = Math.PI * Math.pow((parseFloat(caliber)/1000)/2, 2);
-        const Cd = 0.5 / (bc * 100); 
+        const Cd = 0.5 / (bc * 100);
+
+        if (mode === 'portee') { calculerPortee(massKg, v0, e0, Cd, area, userAngleDeg); return; }
 
         const t_zero = zeroDist / v0;
         const y_drop_zero = 0.5 * g * Math.pow(t_zero, 2);
@@ -277,7 +317,8 @@
         const valGr = (massKg / 0.00006479891).toFixed(2);
         const valG = (massKg * 1000).toFixed(3);
         document.getElementById('resMassCombined').innerText = `${valGr} gr / ${valG} g`;
-        document.getElementById('resE0').innerText = `${e0.toFixed(1)} J`;
+        const eTarget = 0.5 * massKg * vTarget * vTarget;
+        document.getElementById('resE0').innerText = `${e0.toFixed(1)} J / ${eTarget.toFixed(1)} J`;
         
         if (Math.abs(aimCorrectionCm) >= 100) {
             document.getElementById('resAimCorrection').innerText = `${(aimCorrectionCm / 100).toFixed(2)} m ${aimCorrectionCm > 0 ? 'plus HAUT' : 'plus BAS'}`;
@@ -292,10 +333,62 @@
         tracerGraphique(trajectoryPoints, maxDist, targetDist, yTargetCm);
     }
 
+    let mode = 'visee';
+
+    // Mode portée : tir depuis le canon (hauteur 0) jusqu'au retour au sol, sans correction de visée.
+    function calculerPortee(massKg, v0, e0, Cd, area, angleDeg) {
+        const rho = 1.225, g = 9.81, dt = 0.0005;
+        const th = angleDeg * Math.PI / 180;
+        let x = 0, y = 0, time = 0, apex = 0, vImpact = v0;
+        let vx = v0 * Math.cos(th), vy = v0 * Math.sin(th);
+        const pts = [{ x: 0, y: 0 }];
+
+        if (th > 0) {
+            for (let n = 1; n <= 2000000; n++) {
+                const v = Math.sqrt(vx * vx + vy * vy);
+                const k = 0.5 * rho * v * Cd * area / massKg;
+                vx -= k * vx * dt;
+                vy += (-g - k * vy) * dt;
+                const xp = x, yp = y;
+                x += vx * dt; y += vy * dt; time += dt;
+                if (y > apex) apex = y;
+                if (y <= 0) {
+                    const f = yp / (yp - y);
+                    x = xp + (x - xp) * f; time -= dt * (1 - f); y = 0;
+                    vImpact = v;
+                    pts.push({ x: x, y: 0 });
+                    break;
+                }
+                if (n % 10 === 0) pts.push({ x: x, y: y * 100 });
+                if (vx <= 1) break;
+            }
+        }
+
+        const eImpact = 0.5 * massKg * vImpact * vImpact;
+        document.getElementById('resRange').innerText = `${x.toFixed(1)} m`;
+        document.getElementById('resRangeTime').innerText = `${time.toFixed(2)} s`;
+        document.getElementById('resApex').innerText = `${apex.toFixed(2)} m`;
+        document.getElementById('resVImpact').innerText = `${vImpact.toFixed(1)} m/s`;
+        document.getElementById('resEImpact').innerText = `${eImpact.toFixed(2)} J`;
+
+        tracerGraphique(pts, Math.max(x * 1.05, 10), x, 0, `Impact: ${x.toFixed(1)} m`);
+    }
+
+    function setMode(m) {
+        mode = m;
+        vue = null;
+        document.body.className = 'mode-' + m;
+        document.getElementById('btnVisee').classList.toggle('active', m === 'visee');
+        document.getElementById('btnPortee').classList.toggle('active', m === 'portee');
+        document.getElementById('titre').textContent = m === 'portee' ? 'Simulateur Balistique Airgun (Portée du plomb)' : 'Simulateur Balistique Airgun (Correction MOA)';
+        try { localStorage.setItem('balistique_mode', m); } catch (e) {}
+        calculer('vel');
+    }
+
     let derniersArgs = null, vue = null, carte = null;
 
-    function tracerGraphique(points, maxDist, targetDist, yTargetCm) {
-        derniersArgs = [points, maxDist, targetDist, yTargetCm];
+    function tracerGraphique(points, maxDist, targetDist, yTargetCm, texte) {
+        derniersArgs = [points, maxDist, targetDist, yTargetCm, texte];
         const canvas = document.getElementById('trajectoryCanvas');
         const rect = canvas.getBoundingClientRect();
         
@@ -322,6 +415,7 @@
         minY = Math.floor(minY * 1.15);
         maxY = Math.max(20, Math.ceil(maxY * 1.15));
         if (minY === maxY) { minY = -10; maxY = 10; }
+        if (mode === 'portee') minY = -Math.ceil(maxY * 0.05);
 
         const base = { x0: 0, x1: maxDist, y0: minY, y1: maxY };
         carte = { base, padL, padT, plotW, plotH };
@@ -372,7 +466,8 @@
             ctx.stroke();
 
             ctx.textAlign = 'center';
-            ctx.fillText(+vx.toFixed(2) + ' m', sx, h - padB + 18);
+            ctx.fillText(+vx.toFixed(2), sx, h - padB + 16);
+            ctx.fillText('m', sx, h - padB + 29);
         }
 
         ctx.save();
@@ -415,7 +510,7 @@
             ctx.fillStyle = C('--impact-text');
             ctx.font = 'bold 12px sans-serif';
             ctx.textAlign = targetDist > minX + (maxX - minX) * 0.8 ? 'right' : 'left';
-            ctx.fillText(`Cible: ${yTargetCm.toFixed(1)} cm`, tX + (targetDist > minX + (maxX - minX) * 0.8 ? -10 : 10), tY - 10);
+            ctx.fillText(texte || `Cible: ${yTargetCm.toFixed(1)} cm`, tX + (targetDist > minX + (maxX - minX) * 0.8 ? -10 : 10), tY - 10);
         }
 
         ctx.restore();
@@ -435,7 +530,7 @@
         ctx.lineTo(w - 205, 25);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillText('Ligne de visée (0)', w - 195, 29);
+        ctx.fillText(mode === 'portee' ? 'Sol (hauteur du canon)' : 'Ligne de visée (0)', w - 195, 29);
     }
 
     // --- Zoom / déplacement tactile (pincer, glisser, molette, double-tap) ---
@@ -446,7 +541,11 @@
         const y0 = Math.min(Math.max(v.y0, b.y0), b.y1 - h);
         return { x0, x1: x0 + w, y0, y1: y0 + h };
     }
-    function redessiner() { if (derniersArgs) tracerGraphique(...derniersArgs); }
+    function redessiner() {
+        // Sans zoom, un doigt sur le graphique fait défiler la page ; zoomé, il déplace la vue.
+        document.getElementById('trajectoryCanvas').style.touchAction = vue ? 'none' : 'pan-y';
+        if (derniersArgs) tracerGraphique(...derniersArgs);
+    }
     function resetZoom() { vue = null; redessiner(); }
     function vueCourante() { return { x0: carte.x0, x1: carte.x1, y0: carte.y0, y1: carte.y1 }; }
     function pixelVersDonnees(px, py) {
@@ -513,8 +612,9 @@
         }, { passive: false });
     })();
 
-    window.addEventListener('resize', () => calculer('vel'));
-       const CHAMPS = ['caliber','shape','mass','unitMass','energy','velocity','unitVel','scopeHeight','shotAngle','zeroDist','targetDist','maxDist'];
+    // Simple redessin : relancer le calcul ici écrasait la saisie en cours (le clavier mobile déclenche un resize).
+    window.addEventListener('resize', redessiner);
+       const CHAMPS = ['caliber','shape','massGr','massG','energy','velocity','unitVel','scopeHeight','shotAngle','zeroDist','targetDist','maxDist'];
     function sauver() {
         try {
             const d = {};
@@ -544,7 +644,13 @@
         appliquerTheme(t);
         calculer('vel');
     }
-    window.onload = function() { appliquerTheme(themeActuel()); charger(); calculer('vel'); };
+    window.onload = function() {
+        appliquerTheme(themeActuel());
+        charger();
+        let m = 'visee';
+        try { if (localStorage.getItem('balistique_mode') === 'portee') m = 'portee'; } catch (e) {}
+        setMode(m);
+    };
 </script>
 
 </body>
