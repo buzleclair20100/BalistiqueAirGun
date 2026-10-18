@@ -108,9 +108,22 @@
             <input type="number" id="scopeHeight" value="4.0" step="0.1" oninput="calculer('vel')">
         </div>
 
-        <div class="form-group">
-            <label for="shotAngle">Angle de tir (°)</label>
-            <input type="number" id="shotAngle" value="0.5" step="0.1" oninput="calculer('vel')">
+        <div class="form-group visee-only">
+            <label for="inclinaison">Inclinaison du terrain (°) <span style="opacity:.7">+ montée / − descente</span></label>
+            <input type="number" id="inclinaison" value="0" step="0.5" min="-89" max="89" oninput="calculer('vel')">
+        </div>
+
+        <div class="form-group portee-only">
+            <label for="porteeAngle">Angle de tir (°) <span id="angleOptimalTxt" style="opacity:.7"></span></label>
+            <div style="display:flex; gap:6px;">
+                <input type="number" id="porteeAngle" value="" step="0.1" min="0" max="90" style="flex:1; min-width:0;" oninput="pilote = 'angle'; calculer('vel')">
+                <button type="button" onclick="reinitialiserAngle()" title="Revenir à l'angle de portée maximale">Reset</button>
+            </div>
+        </div>
+
+        <div class="form-group portee-only">
+            <label for="porteeCible">Impact (m)</label>
+            <input type="number" id="porteeCible" value="100" step="1" min="0" oninput="pilote = 'impact'; calculer('vel')">
         </div>
 
         <div class="form-group visee-only">
@@ -168,6 +181,10 @@
             <div class="stat-value" id="resRange">0 m</div>
         </div>
         <div class="stat-card">
+            <div class="stat-label">Angles pour cet impact</div>
+            <div class="stat-value" id="resAngleCible">-</div>
+        </div>
+        <div class="stat-card">
             <div class="stat-label">Temps de vol</div>
             <div class="stat-value" id="resRangeTime">0 s</div>
         </div>
@@ -190,7 +207,7 @@
         <button id="zoomReset" type="button" onclick="resetZoom()">Réinitialiser le zoom</button>
     </div>
     <div class="note">Graphique : pincer pour zoomer, glisser pour déplacer, double-tap pour réinitialiser.</div>
-    <div class="note portee-only">Portée calculée tir depuis le canon (hauteur 0) jusqu'au retour au sol. Astuce : essayez un angle de 30 à 35° pour la portée maximale.</div>
+    <div class="note portee-only">Portée calculée tir depuis le canon (hauteur 0) jusqu'au retour au sol. Angle et impact sont liés : modifiez l'un, l'autre est recalculé (tir tendu). « Reset » remet l'angle de portée maximale.</div>
     <div class="note visee-only">* Note : 1 MOA vaut environ 2,91 cm à 100 mètres. Les clics indiqués sont basés sur une tourelle standard de 1/4 MOA par clic.</div>
 </div>
 
@@ -224,7 +241,7 @@
         const zeroDist = parseFloat(document.getElementById('zeroDist').value) || 25;
         const targetDist = parseFloat(document.getElementById('targetDist').value) || 212;
         const maxDist = parseFloat(document.getElementById('maxDist').value) || 250;
-        const userAngleDeg = parseFloat(document.getElementById('shotAngle').value) || 0;
+        const userAngleDeg = parseFloat(document.getElementById('inclinaison').value) || 0;
         const scopeHeightVal = parseFloat(document.getElementById('scopeHeight').value);
         const scopeH_m = (!isNaN(scopeHeightVal) && scopeHeightVal >= 0) ? scopeHeightVal / 100 : 0.04;
 
@@ -254,28 +271,33 @@
         const area = Math.PI * Math.pow((parseFloat(caliber)/1000)/2, 2);
         const Cd = 0.5 / (bc * 100);
 
-        if (mode === 'portee') { calculerPortee(massKg, v0, e0, Cd, area, userAngleDeg); return; }
+        if (mode === 'portee') { calculerPortee(massKg, v0, e0, Cd, area); return; }
 
         const t_zero = zeroDist / v0;
         const y_drop_zero = 0.5 * g * Math.pow(t_zero, 2);
         const zeroTheta = Math.atan((y_drop_zero + scopeH_m) / zeroDist);
         
-        const totalAngleRad = zeroTheta + (userAngleDeg * Math.PI / 180);
+        // Inclinaison du terrain : la lunette est zérotée à plat, la ligne de visée monte/descend de `pente`.
+        // La gravité reste verticale ; on exprime la trajectoire dans le repère de la ligne de visée (distances en oblique).
+        const pente = userAngleDeg * Math.PI / 180;
+        const sinP = Math.sin(pente), cosP = Math.cos(pente);
+        const totalAngleRad = zeroTheta + pente;
 
         const trajectoryPoints = [];
 
-        let dt = 0.0005; 
+        let dt = 0.0005;
         let x = 0, y = -scopeH_m, time = 0;
         let vx = v0 * Math.cos(totalAngleRad);
         let vy = v0 * Math.sin(totalAngleRad);
+        let xs = x * cosP + y * sinP, ys = -x * sinP + y * cosP;
 
         let vTarget = 0, tTarget = 0, yTargetCm = 0;
         let stepCount = 0;
         let foundTarget = false;
 
-        trajectoryPoints.push({ x: 0, y: y * 100 });
+        trajectoryPoints.push({ x: xs, y: ys * 100 });
 
-        while (x <= maxDist && stepCount < 500000) {
+        while (xs <= maxDist && stepCount < 500000) {
             stepCount++;
             let v = Math.sqrt(vx * vx + vy * vy);
             
@@ -288,25 +310,27 @@
             x += vx * dt;
             y += vy * dt;
             time += dt;
+            xs = x * cosP + y * sinP;
+            ys = -x * sinP + y * cosP;
 
-            if (!foundTarget && x >= targetDist) {
+            if (!foundTarget && xs >= targetDist) {
                 foundTarget = true;
                 vTarget = v;
                 tTarget = time;
-                yTargetCm = y * 100;
+                yTargetCm = ys * 100;
             }
 
             if (stepCount % 10 === 0) {
-                trajectoryPoints.push({ x: x, y: y * 100 });
+                trajectoryPoints.push({ x: xs, y: ys * 100 });
             }
 
-            if (vx <= 1) break; 
+            if (vx <= 1) break;
         }
 
         if (!foundTarget) {
             vTarget = Math.sqrt(vx * vx + vy * vy);
             tTarget = time;
-            yTargetCm = y * 100;
+            yTargetCm = ys * 100;
         }
 
         const aimCorrectionCm = -yTargetCm; 
@@ -336,15 +360,16 @@
     let mode = 'visee';
 
     // Mode portée : tir depuis le canon (hauteur 0) jusqu'au retour au sol, sans correction de visée.
-    function calculerPortee(massKg, v0, e0, Cd, area, angleDeg) {
-        const rho = 1.225, g = 9.81, dt = 0.0005;
+    // Simulation d'un tir depuis le canon (hauteur 0). `dt` plus grand et `pts` faux = mode rapide pour la recherche d'angle.
+    function simulerTir(v0, massKg, Cd, area, angleDeg, dt, avecPoints) {
+        const rho = 1.225, g = 9.81;
         const th = angleDeg * Math.PI / 180;
         let x = 0, y = 0, time = 0, apex = 0, vImpact = v0;
         let vx = v0 * Math.cos(th), vy = v0 * Math.sin(th);
         const pts = [{ x: 0, y: 0 }];
 
         if (th > 0) {
-            for (let n = 1; n <= 2000000; n++) {
+            for (let n = 1; n <= 4000000; n++) {
                 const v = Math.sqrt(vx * vx + vy * vy);
                 const k = 0.5 * rho * v * Cd * area / massKg;
                 vx -= k * vx * dt;
@@ -356,12 +381,89 @@
                     const f = yp / (yp - y);
                     x = xp + (x - xp) * f; time -= dt * (1 - f); y = 0;
                     vImpact = v;
-                    pts.push({ x: x, y: 0 });
+                    if (avecPoints) pts.push({ x: x, y: 0 });
                     break;
                 }
-                if (n % 10 === 0) pts.push({ x: x, y: y * 100 });
+                if (avecPoints && n % 10 === 0) pts.push({ x: x, y: y * 100 });
                 if (vx <= 1) break;
             }
+        }
+        return { x, time, apex, vImpact, pts };
+    }
+
+    // Angle donnant la portée maximale : recherche par section dorée (la portée est unimodale en fonction de l'angle).
+    function angleOptimal(v0, massKg, Cd, area) {
+        const portee = a => simulerTir(v0, massKg, Cd, area, a, 0.002, false).x;
+        let lo = 1, hi = 89;
+        const phi = (Math.sqrt(5) - 1) / 2;
+        let c = hi - phi * (hi - lo), d = lo + phi * (hi - lo);
+        let fc = portee(c), fd = portee(d);
+        for (let i = 0; i < 24; i++) {
+            if (fc > fd) { hi = d; d = c; fd = fc; c = hi - phi * (hi - lo); fc = portee(c); }
+            else { lo = c; c = d; fc = fd; d = lo + phi * (hi - lo); fd = portee(d); }
+        }
+        return (lo + hi) / 2;
+    }
+
+    // Angles (tir tendu / tir courbe) qui donnent exactement la distance voulue, par dichotomie de part et d'autre de l'optimum.
+    function anglesPourDistance(cible, v0, massKg, Cd, area, aOpt) {
+        const portee = a => simulerTir(v0, massKg, Cd, area, a, 0.0005, false).x;
+        if (portee(aOpt) < cible) return null;
+        const chercher = (lo, hi, croissant) => {
+            for (let i = 0; i < 30; i++) {
+                const mid = (lo + hi) / 2;
+                if ((portee(mid) < cible) === croissant) lo = mid; else hi = mid;
+            }
+            return (lo + hi) / 2;
+        };
+        return { tendu: chercher(0.01, aOpt, true), courbe: chercher(aOpt, 89.99, false) };
+    }
+
+    // Angle et impact sont liés : `pilote` indique le champ saisi en dernier ('defaut' = angle de portée maximale),
+    // l'autre champ en est déduit à chaque calcul.
+    let pilote = 'defaut', angleOptCle = '', angleOpt = 45, angleMaxPortee = 0;
+
+    function reinitialiserAngle() {
+        pilote = 'defaut';
+        calculer('vel');
+        sauver();
+    }
+
+    function calculerPortee(massKg, v0, e0, Cd, area) {
+        // L'optimum ne dépend que de v0, masse et traînée : on ne le recalcule que si ceux-ci changent.
+        const cle = [v0, massKg, Cd, area].join('|');
+        if (cle !== angleOptCle) {
+            angleOpt = angleOptimal(v0, massKg, Cd, area);
+            angleMaxPortee = simulerTir(v0, massKg, Cd, area, angleOpt, 0.0005, false).x;
+            angleOptCle = cle;
+        }
+        const champAngle = document.getElementById('porteeAngle');
+        const champImpact = document.getElementById('porteeCible');
+        document.getElementById('angleOptimalTxt').textContent = `(optimal : ${angleOpt.toFixed(1)}°)`;
+
+        const impactSaisi = parseFloat(champImpact.value);
+        const elAngle = document.getElementById('resAngleCible');
+        let angles = null;
+        if (pilote === 'impact' && impactSaisi > 0) {
+            // Impact saisi → angle du tir tendu ; hors de portée → angle optimal.
+            angles = anglesPourDistance(impactSaisi, v0, massKg, Cd, area, angleOpt);
+            champAngle.value = angles ? angles.tendu.toFixed(angles.tendu < 5 ? 3 : 2) : angleOpt.toFixed(1);
+            elAngle.innerText = angles
+                ? `${angles.tendu.toFixed(2)}° (tendu) / ${angles.courbe.toFixed(1)}° (courbe)`
+                : `Hors de portée (max ${angleMaxPortee.toFixed(0)} m)`;
+        } else if (pilote === 'defaut') {
+            champAngle.value = angleOpt.toFixed(1);
+        }
+        const angleDeg = parseFloat(champAngle.value);
+        const angleOk = !isNaN(angleDeg) && angleDeg >= 0;
+
+        const { x, time, apex, vImpact, pts } = simulerTir(v0, massKg, Cd, area, angleOk ? angleDeg : 0, 0.0005, true);
+
+        // Angle saisi (ou par défaut) → impact = portée obtenue.
+        if (pilote !== 'impact' && angleOk) champImpact.value = x.toFixed(1);
+        if (pilote !== 'impact') {
+            const a = x > 0 ? anglesPourDistance(x * 0.9995, v0, massKg, Cd, area, angleOpt) : null;
+            elAngle.innerText = a ? `${a.tendu.toFixed(2)}° (tendu) / ${a.courbe.toFixed(1)}° (courbe)` : '-';
         }
 
         const eImpact = 0.5 * massKg * vImpact * vImpact;
@@ -387,8 +489,8 @@
 
     let derniersArgs = null, vue = null, carte = null;
 
-    function tracerGraphique(points, maxDist, targetDist, yTargetCm, texte) {
-        derniersArgs = [points, maxDist, targetDist, yTargetCm, texte];
+    function tracerGraphique(points, maxDist, targetDist, yTargetCm, texte, cibleX) {
+        derniersArgs = [points, maxDist, targetDist, yTargetCm, texte, cibleX];
         const canvas = document.getElementById('trajectoryCanvas');
         const rect = canvas.getBoundingClientRect();
         
@@ -496,6 +598,23 @@
             else ctx.lineTo(sx, sy);
         });
         ctx.stroke();
+
+        // Impact visé (mode portée) : ligne verticale
+        if (cibleX != null) {
+            const cx = toScreenX(cibleX);
+            ctx.strokeStyle = C('--impact');
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 5]);
+            ctx.beginPath();
+            ctx.moveTo(cx, padT);
+            ctx.lineTo(cx, h - padB);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = C('--impact-text');
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = cx > padL + plotW * 0.85 ? 'right' : 'left';
+            ctx.fillText(`Impact visé ${cibleX} m`, cx + (cx > padL + plotW * 0.85 ? -4 : 4), padT + 12);
+        }
 
         // Point impact à la cible
         const tX = toScreenX(targetDist);
@@ -614,11 +733,15 @@
 
     // Simple redessin : relancer le calcul ici écrasait la saisie en cours (le clavier mobile déclenche un resize).
     window.addEventListener('resize', redessiner);
-       const CHAMPS = ['caliber','shape','massGr','massG','energy','velocity','unitVel','scopeHeight','shotAngle','zeroDist','targetDist','maxDist'];
+       const CHAMPS = ['caliber','shape','massGr','massG','energy','velocity','unitVel','scopeHeight','inclinaison','zeroDist','targetDist','maxDist'];
     function sauver() {
         try {
             const d = {};
             CHAMPS.forEach(id => d[id] = document.getElementById(id).value);
+            // Angle / impact : seul le champ saisi à la main est sauvegardé, l'autre en est déduit.
+            d.pilote = pilote;
+            d.porteeAngle = pilote === 'angle' ? document.getElementById('porteeAngle').value : null;
+            d.porteeCible = pilote === 'impact' ? document.getElementById('porteeCible').value : null;
             localStorage.setItem('balistique', JSON.stringify(d));
         } catch (e) {}
     }
@@ -626,6 +749,8 @@
         try {
             const d = JSON.parse(localStorage.getItem('balistique') || '{}');
             CHAMPS.forEach(id => { if (d[id] !== undefined) document.getElementById(id).value = d[id]; });
+            if (d.pilote === 'angle' && d.porteeAngle != null) { document.getElementById('porteeAngle').value = d.porteeAngle; pilote = 'angle'; }
+            else if (d.pilote === 'impact' && d.porteeCible != null) { document.getElementById('porteeCible').value = d.porteeCible; pilote = 'impact'; }
         } catch (e) {}
     }
     document.addEventListener('input', sauver);
