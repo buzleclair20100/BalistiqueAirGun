@@ -2,220 +2,465 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculateur Balistique Airgun Avancé (MOA)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Balistique Airgun</title>
     <style>
         :root {
             color-scheme: light;
-            --bg: #f8fafc; --text: #1e293b; --card: #fff; --title: #0f172a; --shadow: rgba(0,0,0,0.1);
-            --panel: #f1f5f9; --label: #475569; --border: #cbd5e1; --input-bg: #fff;
-            --stats-bg: #eff6ff; --stats-border: #bfdbfe; --stat-label: #1e40af; --stat-value: #1d4ed8;
-            --hl-bg: #dbeafe; --hl-value: #0284c7; --chart-bg: #fff; --note: #64748b;
-            --grid: #e2e8f0; --axis: #64748b; --curve: #2563eb; --sight: #ef4444; --impact: #dc2626; --impact-text: #991b1b;
+            --font: "Roboto Condensed", "sans-serif-condensed", "Bahnschrift", "Arial Narrow", system-ui, sans-serif;
+            --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            --bg: #E7EAE6; --surface: #F8F9F6; --surface-2: #E0E4DF; --ink: #17201C; --text: #17201C;
+            --muted: #56625C; --line: #CBD2CB; --input-bg: #FFFFFF;
+            --brass: #8C6110; --brass-strong: #B98320; --brass-soft: #F2E4C3;
+            --chart-bg: #FBFCFA; --grid: #DEE3DD; --axis: #5E6964;
+            --curve: #1D6B76; --sight: #B03A2E; --impact: #B03A2E; --impact-text: #8A2B21;
+            --hot: #D9572B; --ground: #E3DDCB; --ground-line: #B9AE8C;
+            --shadow: 0 1px 0 rgba(23,32,28,.04), 0 8px 24px -12px rgba(23,32,28,.18);
         }
         :root[data-theme="dark"] {
             color-scheme: dark;
-            --bg: #0b1120; --text: #e2e8f0; --card: #162033; --title: #f1f5f9; --shadow: rgba(0,0,0,0.5);
-            --panel: #1e293b; --label: #94a3b8; --border: #334155; --input-bg: #0f172a;
-            --stats-bg: #172554; --stats-border: #1e3a8a; --stat-label: #93c5fd; --stat-value: #60a5fa;
-            --hl-bg: #1e3a8a; --hl-value: #38bdf8; --chart-bg: #0f172a; --note: #94a3b8;
-            --grid: #243247; --axis: #94a3b8; --curve: #60a5fa; --sight: #f87171; --impact: #f87171; --impact-text: #fca5a5;
+            --bg: #121619; --surface: #1B2125; --surface-2: #242C31; --ink: #E5E9E5; --text: #E5E9E5;
+            --muted: #93A099; --line: #2F393F; --input-bg: #11161A;
+            --brass: #E4AF4C; --brass-strong: #E4AF4C; --brass-soft: #3A2F19;
+            --chart-bg: #161B1E; --grid: #252D32; --axis: #8D9993;
+            --curve: #6FC6D1; --sight: #F07B6B; --impact: #F07B6B; --impact-text: #F6A598;
+            --hot: #FF9A5C; --ground: #262A22; --ground-line: #4A5040;
+            --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.7);
         }
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px var(--shadow); }
-        h1 { font-size: 1.6rem; text-align: center; color: var(--title); margin-top: 0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; background: var(--panel); padding: 18px; border-radius: 8px; margin-bottom: 20px; }
-        .top-row { display: flex; gap: 15px; align-items: stretch; margin-bottom: 20px; }
-        .top-row .grid { flex: 1; min-width: 0; margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-        .side-panel { flex: 0 0 150px; display: flex; flex-direction: column; justify-content: center; gap: 10px; background: var(--panel); padding: 12px; border-radius: 8px; }
-        .side-panel button { padding: 10px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 0.9rem; cursor: pointer; }
-        .side-panel button.active { background: var(--hl-bg); border-color: var(--hl-value); color: var(--hl-value); font-weight: 600; }
-        .mode-portee .visee-only, .mode-visee .portee-only { display: none; }
-        @media (max-width: 600px) { .side-panel { flex-basis: 120px; padding: 8px; } .top-row .grid { padding: 12px; } }
-        .form-group { display: flex; flex-direction: column; }
-        label { font-size: 0.85rem; font-weight: 600; color: var(--label); margin-bottom: 5px; }
-        input, select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; background: var(--input-bg); color: var(--text); }
+
+        * { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            margin: 0; min-height: 100vh;
+            font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+            background: var(--bg); color: var(--ink);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mode-portee .visee-only, .mode-visee .portee-only { display: none !important; }
+
+        /* ---------- Barre d'en-tête ---------- */
+        .appbar {
+            position: sticky; top: 0; z-index: 10;
+            display: flex; align-items: center; gap: 12px;
+            padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+            background: color-mix(in srgb, var(--bg) 88%, transparent);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--line);
+        }
+        .brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+        .brand svg { flex: 0 0 auto; color: var(--brass); }
+        .brand-text { min-width: 0; }
+        .brand h1 {
+            margin: 0; font-family: var(--font); font-weight: 700; font-size: 1.15rem;
+            letter-spacing: .01em; line-height: 1.1; white-space: nowrap;
+        }
+        #titre { display: block; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .segmented {
+            display: inline-flex; padding: 3px; gap: 2px;
+            background: var(--surface-2); border-radius: 10px; border: 1px solid var(--line);
+        }
+        .segmented button {
+            appearance: none; border: 0; background: transparent; color: var(--muted);
+            font: 600 .9rem/1 var(--font); letter-spacing: .02em;
+            padding: 9px 14px; border-radius: 7px; cursor: pointer; min-height: 36px;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: background-color .15s, color .15s;
+        }
+        .segmented button svg { width: 15px; height: 15px; }
+        .segmented button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+        .segmented button.active svg { color: var(--brass); }
+
+        .icon-btn {
+            appearance: none; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 10px;
+            border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+            display: inline-grid; place-items: center; cursor: pointer;
+        }
+        .icon-btn svg { width: 18px; height: 18px; }
+        :root[data-theme="dark"] .icon-moon, :root:not([data-theme="dark"]) .icon-sun { display: none; }
+
+        /* ---------- Mise en page ---------- */
+        .layout {
+            max-width: 1280px; margin: 0 auto; padding: 16px;
+            display: grid; gap: 16px;
+            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); align-items: start;
+        }
+        .panel {
+            background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+            box-shadow: var(--shadow);
+        }
+        .inputs { padding: 6px 18px 18px; position: sticky; top: 76px; }
+        .inputs h2 {
+            margin: 14px 0 10px; font: 700 .95rem/1.2 var(--font); color: var(--muted);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .inputs h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+        .fields { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+        .form-group { display: flex; flex-direction: column; min-width: 0; }
+        .form-group.wide { grid-column: 1 / -1; }
+        label { font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+        .hint { font-weight: 400; opacity: .85; }
+
+        input, select {
+            width: 100%; min-height: 44px; padding: 8px 12px;
+            border: 1px solid var(--line); border-radius: 9px;
+            font: 500 1rem var(--font-body); font-variant-numeric: tabular-nums;
+            background: var(--input-bg); color: var(--ink);
+            transition: border-color .15s, box-shadow .15s;
+        }
+        select {
+            appearance: none; -webkit-appearance: none; padding-right: 32px;
+            background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+            background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+            background-size: 5px 5px; background-repeat: no-repeat;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--brass-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass-strong) 25%, transparent); }
+        button:focus-visible { outline: 2px solid var(--brass-strong); outline-offset: 2px; }
         .unit-group { display: flex; gap: 8px; }
         .unit-group input { flex: 1; min-width: 0; }
-        .unit-group select { width: 100px; flex-shrink: 0; }
-        .stats { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; background: var(--stats-bg); border: 1px solid var(--stats-border); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .stat-card { text-align: center; }
-        .stat-label { font-size: 0.8rem; color: var(--stat-label); font-weight: bold; text-transform: uppercase; }
-        .stat-value { font-size: 1.25rem; font-weight: bold; color: var(--stat-value); }
-        .stat-card.highlight { background: var(--hl-bg); padding: 5px 12px; border-radius: 6px; }
-        .stat-card.highlight .stat-value { color: var(--hl-value); font-size: 1.35rem; }
-        .chart-container { position: relative; width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--chart-bg); overflow: hidden; }
-        canvas { display: block; width: 100%; height: 480px; touch-action: pan-y; }
-        #zoomReset { position: absolute; top: 6px; left: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--text); font-size: 0.8rem; cursor: pointer; display: none; }
-        @media (max-width: 600px) { body { padding: 6px; } .container { padding: 12px; } h1 { font-size: 1.2rem; } canvas { height: 480px; } }
-        .note { font-size: 0.85rem; color: var(--note); margin-top: 10px; font-style: italic; }
+        .unit-group select { width: 84px; flex-shrink: 0; }
+        .unit-group .tag {
+            flex: 0 0 auto; align-self: center; font: 600 .8rem var(--font); color: var(--muted); width: 18px;
+        }
+        .ghost-btn {
+            appearance: none; flex: 0 0 auto; min-height: 44px; padding: 0 14px; border-radius: 9px;
+            border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+            font: 600 .85rem var(--font); cursor: pointer;
+        }
+
+        /* ---------- Résultats ---------- */
+        .results { display: grid; gap: 16px; min-width: 0; }
+        .readout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); overflow: hidden; }
+        .dial {
+            position: relative; padding: 26px 22px 20px;
+            background: var(--surface);
+        }
+        /* Graduations de tourelle : l'élément signature */
+        .dial::before {
+            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px;
+            background:
+                repeating-linear-gradient(90deg, var(--brass-strong) 0 1.5px, transparent 1.5px 40px),
+                repeating-linear-gradient(90deg, color-mix(in srgb, var(--brass-strong) 55%, transparent) 0 1px, transparent 1px 8px);
+            background-size: 100% 12px, 100% 6px; background-repeat: no-repeat;
+            opacity: .9;
+        }
+        .dial-label { font-size: .85rem; color: var(--muted); font-weight: 600; }
+        .dial-value {
+            margin-top: 4px; font-family: var(--font); font-weight: 700;
+            font-size: clamp(2rem, 5.5vw, 3.1rem); line-height: 1.05; letter-spacing: -.01em;
+            font-variant-numeric: tabular-nums; color: var(--ink);
+        }
+        .dial-sub {
+            margin-top: 10px; display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border-radius: 999px;
+            background: var(--brass-soft); color: var(--brass);
+            font: 700 1rem var(--font); font-variant-numeric: tabular-nums;
+        }
+        .stats {
+            margin: 0; padding: 8px 20px; display: grid; align-content: center;
+            background: var(--surface-2); border-left: 1px solid var(--line);
+        }
+        .stat-card {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+            padding: 9px 0; border-bottom: 1px solid var(--line);
+        }
+        .stat-card:last-child { border-bottom: 0; }
+        .stat-label { font-size: .82rem; color: var(--muted); }
+        .stat-value {
+            font: 700 1.05rem var(--font); font-variant-numeric: tabular-nums; text-align: right;
+            color: var(--ink);
+        }
+
+        .chart-panel { padding: 14px 14px 12px; min-width: 0; }
+        .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 10px; }
+        .chart-head h2 { margin: 0; font: 700 1rem var(--font); }
+        .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--muted); }
+        .legend span { display: inline-flex; align-items: center; gap: 6px; }
+        .legend i { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--curve); border-radius: 2px; }
+        .legend i.energie { width: 30px; height: 4px; border: 0; background: linear-gradient(90deg, var(--hot), var(--brass-strong), var(--curve)); }
+        .chart-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+        .fire-btn {
+            appearance: none; border: 0; cursor: pointer; min-height: 36px; padding: 0 16px 0 12px;
+            display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
+            background: var(--brass-strong); color: #FFFFFF; font: 700 .9rem/1 var(--font); letter-spacing: .03em;
+            box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--brass-strong) 70%, transparent);
+            transition: transform .1s;
+        }
+        :root[data-theme="dark"] .fire-btn { color: #1B1408; }
+        .fire-btn:active { transform: scale(.95); }
+        .fire-btn svg { width: 16px; height: 16px; }
+        .legend i.dash { border-top: 2px dashed var(--sight); }
+        .chart-container {
+            position: relative; width: 100%; border-radius: 10px; overflow: hidden;
+            background: var(--chart-bg); border: 1px solid var(--line);
+        }
+        canvas { display: block; width: 100%; height: 440px; touch-action: pan-y; }
+        #zoomReset {
+            position: absolute; top: 10px; right: 10px; padding: 7px 12px;
+            border: 1px solid var(--line); border-radius: 999px;
+            background: var(--surface); color: var(--ink); font: 600 .8rem var(--font);
+            cursor: pointer; display: none; box-shadow: var(--shadow);
+        }
+        .notes { padding: 10px 6px 0; display: grid; gap: 4px; }
+        .note { font-size: .8rem; color: var(--muted); margin: 0; }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: minmax(0, 1fr); }
+            .inputs { position: static; }
+        }
+        @media (max-width: 600px) {
+            .appbar { flex-wrap: wrap; padding-left: 12px; padding-right: 12px; gap: 10px; }
+            .brand { order: 1; }
+            .icon-btn { order: 2; }
+            .segmented { order: 3; flex: 1 1 100%; }
+            .segmented button { flex: 1; justify-content: center; }
+            .layout { padding: 12px; gap: 12px; }
+            .inputs { padding: 4px 14px 14px; }
+            .readout { grid-template-columns: minmax(0, 1fr); }
+            .stats { border-left: 0; border-top: 1px solid var(--line); padding: 4px 18px; }
+            .dial { padding: 24px 18px 18px; }
+            .chart-panel { padding: 10px 8px 10px; }
+            .chart-head { flex-wrap: wrap; gap: 8px 12px; }
+            .chart-tools { display: contents; }
+            .fire-btn { order: 2; }
+            .legend { order: 3; flex-basis: 100%; gap: 6px 14px; }
+            canvas { height: 360px; }
+        }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
 </head>
 <body class="mode-visee">
 
-<div class="container">
-    <h1 id="titre">Simulateur Balistique Airgun (Correction MOA)</h1>
-
-    <div class="grid">
-        <div class="form-group">
-            <label for="caliber">Calibre</label>
-            <select id="caliber" onchange="calculer('vel')">
-                <option value="4.5">4.5 mm (.177)</option>
-                <option value="5.5" selected>5.5 mm (.22)</option>
-            </select>
+<header class="appbar">
+    <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="17" cy="17" r="14.5" stroke-width="2"/>
+            <circle cx="17" cy="17" r="2" fill="currentColor" stroke="none"/>
+            <path d="M17 2.5v9M17 22.5v9M2.5 17h9M22.5 17h9" stroke-width="1.6"/>
+            <path d="M15 25h4M15.5 28h3" stroke-width="1.2"/>
+        </svg>
+        <div class="brand-text">
+            <h1>Balistique Airgun</h1>
+            <span id="titre">Correction de visée</span>
         </div>
+    </div>
+    <div class="segmented" id="sidePanel" role="tablist" aria-label="Mode de calcul">
+        <button id="btnVisee" type="button" onclick="setMode('visee')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 0.5v4M8 11.5v4M0.5 8h4M11.5 8h4"/></svg>
+            Visée
+        </button>
+        <button id="btnPortee" type="button" onclick="setMode('portee')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1 13.5C4 3 10 3 15 13.5"/><path d="M1 14.5h14"/></svg>
+            Portée
+        </button>
+    </div>
+    <button id="themeToggle" class="icon-btn" type="button" onclick="basculerTheme()" aria-label="Changer de thème">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+</header>
 
-        <div class="form-group">
-            <label for="shape">Profil du projectile</label>
-            <select id="shape" onchange="calculer('vel')">
-                <option value="flat">Diabolo Tête Plate (BC ~0.010)</option>
-                <option value="pointed">Diabolo Tête Pointue (BC ~0.018)</option>
-                <option value="domed" selected>Diabolo Tête Ronde (BC ~0.033)</option>
-                <option value="slug">Slug (BC ~0.075)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="massG">Masse du plomb (grammes | grains)</label>
-            <div class="unit-group">
-                <input type="number" id="massG" value="1.175" step="0.001" aria-label="Masse en grammes" oninput="syncMasse('g')">
-                <input type="number" id="massGr" value="18.13" step="0.01" aria-label="Masse en grains" oninput="syncMasse('gr')">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="velocity">Vitesse initiale (V0)</label>
-            <div class="unit-group">
-                <input type="number" id="velocity" value="280" step="1" oninput="calculer('vel')">
-                <select id="unitVel" onchange="calculer('vel')">
-                    <option value="ms" selected>m/s</option>
-                    <option value="fps">FPS</option>
+<main class="layout">
+    <section class="panel inputs" aria-label="Paramètres">
+        <h2>Projectile</h2>
+        <div class="fields">
+            <div class="form-group">
+                <label for="caliber">Calibre</label>
+                <select id="caliber" onchange="bcParDefaut(); calculer('vel')">
+                    <option value="4.5">4.5 mm (.177)</option>
+                    <option value="5.5" selected>5.5 mm (.22)</option>
                 </select>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="energy">Énergie (Joules)</label>
-            <input type="number" id="energy" value="45.8" step="0.1" oninput="calculer('joules')">
-        </div>
+            <div class="form-group">
+                <label for="shape">Profil</label>
+                <select id="shape" onchange="bcParDefaut(); calculer('vel')">
+                    <option value="flat">Tête plate</option>
+                    <option value="pointed">Tête pointue</option>
+                    <option value="domed" selected>Tête ronde</option>
+                    <option value="slug">Slug</option>
+                </select>
+            </div>
 
-    </div>
+            <div class="form-group wide">
+                <label for="bc">Coefficient balistique (BC) <span class="hint">valeur du fabricant</span></label>
+                <div class="unit-group">
+                    <input type="number" id="bc" value="0.033" step="0.001" min="0.001" inputmode="decimal" oninput="calculer('vel')">
+                    <button type="button" class="ghost-btn" onclick="bcParDefaut(); calculer('vel'); sauver()" title="Reprendre la valeur typique du calibre et du profil">Valeur type</button>
+                </div>
+            </div>
 
-    <div class="top-row">
-    <div class="grid">
-        <div class="form-group visee-only">
-            <label for="scopeHeight">Hauteur Lunette / Canon (cm)</label>
-            <input type="number" id="scopeHeight" value="4.0" step="0.1" oninput="calculer('vel')">
-        </div>
+            <div class="form-group wide">
+                <label for="massG">Masse du plomb</label>
+                <div class="unit-group">
+                    <input type="number" id="massG" value="1.175" step="0.001" inputmode="decimal" aria-label="Masse en grammes" oninput="syncMasse('g')">
+                    <span class="tag">g</span>
+                    <input type="number" id="massGr" value="18.13" step="0.01" inputmode="decimal" aria-label="Masse en grains" oninput="syncMasse('gr')">
+                    <span class="tag">gr</span>
+                </div>
+            </div>
 
-        <div class="form-group visee-only">
-            <label for="inclinaison">Inclinaison du terrain (°) <span style="opacity:.7">+ montée / − descente</span></label>
-            <input type="number" id="inclinaison" value="0" step="0.5" min="-89" max="89" oninput="calculer('vel')">
-        </div>
+            <div class="form-group wide">
+                <label for="velocity">Vitesse initiale</label>
+                <div class="unit-group">
+                    <input type="number" id="velocity" value="280" step="1" inputmode="decimal" oninput="calculer('vel')">
+                    <select id="unitVel" onchange="calculer('vel')" aria-label="Unité de vitesse">
+                        <option value="ms" selected>m/s</option>
+                        <option value="fps">fps</option>
+                    </select>
+                </div>
+            </div>
 
-        <div class="form-group portee-only">
-            <label for="porteeAngle">Angle de tir (°) <span id="angleOptimalTxt" style="opacity:.7"></span></label>
-            <div style="display:flex; gap:6px;">
-                <input type="number" id="porteeAngle" value="" step="0.1" min="0" max="90" style="flex:1; min-width:0;" oninput="pilote = 'angle'; calculer('vel')">
-                <button type="button" onclick="reinitialiserAngle()" title="Revenir à l'angle de portée maximale">Reset</button>
+            <div class="form-group wide">
+                <label for="energy">Énergie (J)</label>
+                <input type="number" id="energy" value="45.8" step="0.1" inputmode="decimal" oninput="calculer('joules')">
             </div>
         </div>
 
-        <div class="form-group portee-only">
-            <label for="porteeCible">Impact (m)</label>
-            <input type="number" id="porteeCible" value="100" step="1" min="0" oninput="pilote = 'impact'; calculer('vel')">
+        <h2>Tir</h2>
+        <div class="fields">
+            <div class="form-group visee-only">
+                <label for="zeroDist">Zéro (m)</label>
+                <input type="number" id="zeroDist" value="25" step="1" inputmode="decimal" oninput="calculer('vel')">
+            </div>
+
+            <div class="form-group visee-only">
+                <label for="targetDist">Cible (m)</label>
+                <input type="number" id="targetDist" value="212" step="1" inputmode="decimal" oninput="calculer('vel')">
+            </div>
+
+            <div class="form-group visee-only">
+                <label for="scopeHeight">Hauteur lunette (cm)</label>
+                <input type="number" id="scopeHeight" value="4.0" step="0.1" inputmode="decimal" oninput="calculer('vel')">
+            </div>
+
+            <div class="form-group visee-only">
+                <label for="inclinaison">Pente (°) <span class="hint">+ / −</span></label>
+                <input type="number" id="inclinaison" value="0" step="0.5" min="-89" max="89" inputmode="decimal" oninput="calculer('vel')">
+            </div>
+
+            <div class="form-group visee-only wide">
+                <label for="maxDist">Distance max du graphique (m)</label>
+                <input type="number" id="maxDist" value="250" step="10" inputmode="decimal" oninput="calculer('vel')">
+            </div>
+
+            <div class="form-group portee-only wide">
+                <label for="porteeAngle">Angle de tir (°) <span id="angleOptimalTxt" class="hint"></span></label>
+                <div class="unit-group">
+                    <input type="number" id="porteeAngle" value="" step="0.1" min="0" max="90" inputmode="decimal" oninput="pilote = 'angle'; calculer('vel')">
+                    <button type="button" class="ghost-btn" onclick="reinitialiserAngle()" title="Revenir à l'angle de portée maximale">Angle optimal</button>
+                </div>
+            </div>
+
+            <div class="form-group portee-only wide">
+                <label for="porteeCible">Distance d'impact (m)</label>
+                <input type="number" id="porteeCible" value="100" step="1" min="0" inputmode="decimal" oninput="pilote = 'impact'; calculer('vel')">
+            </div>
+        </div>
+    </section>
+
+    <section class="results">
+        <div class="panel readout visee-only">
+            <div class="dial">
+                <div class="dial-label">Viser à la cible</div>
+                <div class="dial-value" id="resAimCorrection">0 cm</div>
+                <div class="dial-sub" id="resMoa">0 MOA</div>
+            </div>
+            <dl class="stats">
+                <div class="stat-card"><dt class="stat-label">Vitesse à la cible</dt><dd class="stat-value" id="resVTarget">0 m/s</dd></div>
+                <div class="stat-card"><dt class="stat-label">Énergie départ / cible</dt><dd class="stat-value" id="resE0">0 J</dd></div>
+                <div class="stat-card"><dt class="stat-label">Temps de vol</dt><dd class="stat-value" id="resTTarget">0 s</dd></div>
+                <div class="stat-card"><dt class="stat-label">Masse</dt><dd class="stat-value" id="resMassCombined">0 gr / 0 g</dd></div>
+            </dl>
         </div>
 
-        <div class="form-group visee-only">
-            <label for="zeroDist">Distance de Zéro (m)</label>
-            <input type="number" id="zeroDist" value="25" step="1" oninput="calculer('vel')">
+        <div class="panel readout portee-only">
+            <div class="dial">
+                <div class="dial-label">Portée du plomb</div>
+                <div class="dial-value" id="resRange">0 m</div>
+                <div class="dial-sub" id="resAngleCible">-</div>
+            </div>
+            <dl class="stats">
+                <div class="stat-card"><dt class="stat-label">Temps de vol</dt><dd class="stat-value" id="resRangeTime">0 s</dd></div>
+                <div class="stat-card"><dt class="stat-label">Hauteur max</dt><dd class="stat-value" id="resApex">0 m</dd></div>
+                <div class="stat-card"><dt class="stat-label">Vitesse à l'impact</dt><dd class="stat-value" id="resVImpact">0 m/s</dd></div>
+                <div class="stat-card"><dt class="stat-label">Énergie à l'impact</dt><dd class="stat-value" id="resEImpact">0 J</dd></div>
+            </dl>
         </div>
 
-        <div class="form-group visee-only">
-            <label for="targetDist">Distance de la Cible (m)</label>
-            <input type="number" id="targetDist" value="212" step="1" oninput="calculer('vel')">
+        <div class="panel chart-panel">
+            <div class="chart-head">
+                <h2>Trajectoire</h2>
+                <div class="chart-tools">
+                    <div class="legend">
+                        <span><i class="energie"></i>Plomb : énergie forte → faible</span>
+                        <span><i class="dash"></i><span class="visee-only">Ligne de visée</span><span class="portee-only">Sol (hauteur du canon)</span></span>
+                    </div>
+                    <button id="btnTir" class="fire-btn" type="button" onclick="lancerTir()" title="Rejouer le tir au ralenti">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none"/><path d="M8 0.5v3M8 12.5v3M0.5 8h3M12.5 8h3"/></svg>
+                        Tirer
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="trajectoryCanvas"></canvas>
+                <button id="zoomReset" type="button" onclick="resetZoom()">Réinitialiser le zoom</button>
+            </div>
+            <div class="notes">
+                <p class="note">Touchez ou glissez le doigt sur la courbe pour lire distance, hauteur, vitesse et énergie. Pincez pour zoomer, touchez deux fois pour revenir à la vue complète.</p>
+                <p class="note visee-only">1 MOA ≈ 2,91 cm à 100 m. Clics calculés pour une tourelle à 1/4 MOA.</p>
+                <p class="note portee-only">Tir depuis le canon jusqu'au retour au sol. Modifiez l'angle ou la distance d'impact : l'autre est recalculé (tir tendu).</p>
+            </div>
         </div>
-
-        <div class="form-group visee-only">
-            <label for="maxDist">Distance Max Graphique (m)</label>
-            <input type="number" id="maxDist" value="250" step="10" oninput="calculer('vel')">
-        </div>
-    </div>
-    <div class="side-panel" id="sidePanel">
-        <button id="btnVisee" type="button" onclick="setMode('visee')">🎯 Visée</button>
-        <button id="btnPortee" type="button" onclick="setMode('portee')">📏 Portée</button>
-        <button id="themeToggle" type="button" onclick="basculerTheme()" aria-label="Changer de thème"></button>
-    </div>
-    </div>
-
-    <div class="stats visee-only">
-        <div class="stat-card">
-            <div class="stat-label">Masse du plomb</div>
-            <div class="stat-value" id="resMassCombined">0 gr / 0 g</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Énergie initiale / cible</div>
-            <div class="stat-value" id="resE0">0 J</div>
-        </div>
-        <div class="stat-card highlight">
-            <div class="stat-label">Correction à viser à la cible</div>
-            <div class="stat-value" id="resAimCorrection">0 cm</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Correction en MOA (Clics 1/4)</div>
-            <div class="stat-value" id="resMoa">0 MOA</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Vitesse à la cible</div>
-            <div class="stat-value" id="resVTarget">0 m/s</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Temps de vol</div>
-            <div class="stat-value" id="resTTarget">0 s</div>
-        </div>
-    </div>
-
-    <div class="stats portee-only">
-        <div class="stat-card highlight">
-            <div class="stat-label">Portée du plomb</div>
-            <div class="stat-value" id="resRange">0 m</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Angles pour cet impact</div>
-            <div class="stat-value" id="resAngleCible">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Temps de vol</div>
-            <div class="stat-value" id="resRangeTime">0 s</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Hauteur max</div>
-            <div class="stat-value" id="resApex">0 m</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Vitesse à l'impact</div>
-            <div class="stat-value" id="resVImpact">0 m/s</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Énergie à l'impact</div>
-            <div class="stat-value" id="resEImpact">0 J</div>
-        </div>
-    </div>
-
-    <div class="chart-container">
-        <canvas id="trajectoryCanvas"></canvas>
-        <button id="zoomReset" type="button" onclick="resetZoom()">Réinitialiser le zoom</button>
-    </div>
-    <div class="note">Graphique : pincer pour zoomer, glisser pour déplacer, double-tap pour réinitialiser.</div>
-    <div class="note portee-only">Portée calculée tir depuis le canon (hauteur 0) jusqu'au retour au sol. Angle et impact sont liés : modifiez l'un, l'autre est recalculé (tir tendu). « Reset » remet l'angle de portée maximale.</div>
-    <div class="note visee-only">* Note : 1 MOA vaut environ 2,91 cm à 100 mètres. Les clics indiqués sont basés sur une tourelle standard de 1/4 MOA par clic.</div>
-</div>
+    </section>
+</main>
 
 <script>
     const bcTable = {
         "4.5": { flat: 0.010, pointed: 0.014, domed: 0.021, slug: 0.045 },
         "5.5": { flat: 0.012, pointed: 0.018, domed: 0.033, slug: 0.075 }
     };
+
+    // Valeur typique du BC pour le calibre et le profil choisis (l'utilisateur peut la remplacer par celle de son plomb).
+    function bcParDefaut() {
+        document.getElementById('bc').value = bcTable[document.getElementById('caliber').value][document.getElementById('shape').value];
+    }
+
+    // Hauteur (m) du plomb par rapport à la ligne de visée à la distance `dist`, pour un tir à plat sous l'angle `theta`.
+    // Même intégration que la trajectoire principale ; NaN si le plomb n'atteint pas la distance.
+    function hauteurA(v0, massKg, Cd, area, scopeH_m, theta, dist) {
+        const rho = 1.225, g = 9.81, dt = 0.0005;
+        let x = 0, y = -scopeH_m, vx = v0 * Math.cos(theta), vy = v0 * Math.sin(theta);
+        for (let n = 0; n < 2000000; n++) {
+            const v = Math.sqrt(vx * vx + vy * vy);
+            const k = 0.5 * rho * v * Cd * area / massKg;
+            vx -= k * vx * dt;
+            vy += (-g - k * vy) * dt;
+            const xp = x, yp = y;
+            x += vx * dt; y += vy * dt;
+            if (x >= dist) return yp + (y - yp) * (dist - xp) / (x - xp);
+            if (vx <= 1) return NaN;
+        }
+        return NaN;
+    }
+
+    // Angle de zéro : la trajectoire avec traînée doit repasser exactement par la ligne de visée à la distance de zéro.
+    // Départ sur l'estimation sans traînée, puis méthode de la sécante.
+    function angleZero(v0, massKg, Cd, area, scopeH_m, zeroDist) {
+        const t = zeroDist / v0;
+        let a0 = Math.atan((0.5 * 9.81 * t * t + scopeH_m) / zeroDist), a1 = a0 + 0.001;
+        let f0 = hauteurA(v0, massKg, Cd, area, scopeH_m, a0, zeroDist);
+        if (isNaN(f0)) return a0;
+        for (let i = 0; i < 12; i++) {
+            const f1 = hauteurA(v0, massKg, Cd, area, scopeH_m, a1, zeroDist);
+            if (isNaN(f1) || f1 === f0) break;
+            const a2 = a1 - f1 * (a1 - a0) / (f1 - f0);
+            a0 = a1; f0 = f1; a1 = a2;
+            if (Math.abs(f1) < 1e-5) break;
+        }
+        return a1;
+    }
 
     // Masse saisie en grains ou en grammes : l'autre champ est converti automatiquement.
     function syncMasse(source) {
@@ -264,7 +509,8 @@
             energyInput.value = e0.toFixed(1);
         }
 
-        const bc = bcTable[caliber][shape];
+        const bcSaisi = parseFloat(document.getElementById('bc').value);
+        const bc = (!isNaN(bcSaisi) && bcSaisi > 0) ? bcSaisi : bcTable[caliber][shape];
         const rho = 1.225;
         const g = 9.81;
 
@@ -273,9 +519,7 @@
 
         if (mode === 'portee') { calculerPortee(massKg, v0, e0, Cd, area); return; }
 
-        const t_zero = zeroDist / v0;
-        const y_drop_zero = 0.5 * g * Math.pow(t_zero, 2);
-        const zeroTheta = Math.atan((y_drop_zero + scopeH_m) / zeroDist);
+        const zeroTheta = angleZero(v0, massKg, Cd, area, scopeH_m, zeroDist);
         
         // Inclinaison du terrain : la lunette est zérotée à plat, la ligne de visée monte/descend de `pente`.
         // La gravité reste verticale ; on exprime la trajectoire dans le repère de la ligne de visée (distances en oblique).
@@ -295,7 +539,7 @@
         let stepCount = 0;
         let foundTarget = false;
 
-        trajectoryPoints.push({ x: xs, y: ys * 100 });
+        trajectoryPoints.push({ x: xs, y: ys * 100, v: v0, t: 0 });
 
         while (xs <= maxDist && stepCount < 500000) {
             stepCount++;
@@ -321,7 +565,7 @@
             }
 
             if (stepCount % 10 === 0) {
-                trajectoryPoints.push({ x: xs, y: ys * 100 });
+                trajectoryPoints.push({ x: xs, y: ys * 100, v: Math.sqrt(vx * vx + vy * vy), t: time });
             }
 
             if (vx <= 1) break;
@@ -354,7 +598,7 @@
         document.getElementById('resVTarget').innerText = `${vTarget.toFixed(1)} m/s`;
         document.getElementById('resTTarget').innerText = `${tTarget.toFixed(2)} s`;
 
-        tracerGraphique(trajectoryPoints, maxDist, targetDist, yTargetCm);
+        tracerGraphique(trajectoryPoints, maxDist, targetDist, yTargetCm, null, { massKg, zeroDist });
     }
 
     let mode = 'visee';
@@ -366,7 +610,7 @@
         const th = angleDeg * Math.PI / 180;
         let x = 0, y = 0, time = 0, apex = 0, vImpact = v0;
         let vx = v0 * Math.cos(th), vy = v0 * Math.sin(th);
-        const pts = [{ x: 0, y: 0 }];
+        const pts = [{ x: 0, y: 0, v: v0, t: 0 }];
 
         if (th > 0) {
             for (let n = 1; n <= 4000000; n++) {
@@ -381,10 +625,10 @@
                     const f = yp / (yp - y);
                     x = xp + (x - xp) * f; time -= dt * (1 - f); y = 0;
                     vImpact = v;
-                    if (avecPoints) pts.push({ x: x, y: 0 });
+                    if (avecPoints) pts.push({ x: x, y: 0, v: v, t: time });
                     break;
                 }
-                if (avecPoints && n % 10 === 0) pts.push({ x: x, y: y * 100 });
+                if (avecPoints && n % 10 === 0) pts.push({ x: x, y: y * 100, v: Math.sqrt(vx * vx + vy * vy), t: time });
                 if (vx <= 1) break;
             }
         }
@@ -473,36 +717,88 @@
         document.getElementById('resVImpact').innerText = `${vImpact.toFixed(1)} m/s`;
         document.getElementById('resEImpact').innerText = `${eImpact.toFixed(2)} J`;
 
-        tracerGraphique(pts, Math.max(x * 1.05, 10), x, 0, `Impact: ${x.toFixed(1)} m`);
+        tracerGraphique(pts, Math.max(x * 1.05, 10), x, 0, `Impact : ${x.toFixed(1)} m`, { massKg });
     }
 
     function setMode(m) {
         mode = m;
-        vue = null;
+        vue = null; sonde = null;
         document.body.className = 'mode-' + m;
         document.getElementById('btnVisee').classList.toggle('active', m === 'visee');
         document.getElementById('btnPortee').classList.toggle('active', m === 'portee');
-        document.getElementById('titre').textContent = m === 'portee' ? 'Simulateur Balistique Airgun (Portée du plomb)' : 'Simulateur Balistique Airgun (Correction MOA)';
+        document.getElementById('btnVisee').setAttribute('aria-selected', m === 'visee');
+        document.getElementById('btnPortee').setAttribute('aria-selected', m === 'portee');
+        document.getElementById('titre').textContent = m === 'portee' ? 'Portée du plomb' : 'Correction de visée';
         try { localStorage.setItem('balistique_mode', m); } catch (e) {}
         calculer('vel');
+        lancerTir();
     }
 
     let derniersArgs = null, vue = null, carte = null;
+    // Animation du tir : `animP` = part du temps de vol déjà affichée (1 = trajectoire complète).
+    // `sonde` = distance (m) lue au doigt ou à la souris, null si aucune.
+    let animP = 1, animId = 0, sonde = null;
 
-    function tracerGraphique(points, maxDist, targetDist, yTargetCm, texte, cibleX) {
-        derniersArgs = [points, maxDist, targetDist, yTargetCm, texte, cibleX];
+    // Rejoue le tir au ralenti : le plomb parcourt la courbe, la cible et l'impact apparaissent à son passage.
+    function lancerTir() {
+        if (!derniersArgs) return;
+        const pts = derniersArgs[0], tMax = pts[pts.length - 1].t || 0;
+        cancelAnimationFrame(animId);
+        const calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (tMax <= 0 || calme) { animP = 1; redessiner(); return; }
+        // Environ 1,6 s d'animation par seconde de vol, bornée pour rester agréable.
+        const duree = Math.min(3200, Math.max(1100, tMax * 1600)), debut = performance.now();
+        const etape = now => {
+            animP = Math.min(1, (now - debut) / duree);
+            redessiner();
+            if (animP < 1) animId = requestAnimationFrame(etape);
+        };
+        animP = 0;
+        animId = requestAnimationFrame(etape);
+    }
+
+    // Mélange de deux couleurs #rrggbb (f = 0 → a, f = 1 → b).
+    function melanger(a, b, f) {
+        const rgb = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+        const A = rgb(a), B = rgb(b);
+        return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(',')})`;
+    }
+
+    // Point de la trajectoire interpolé selon `cle` ('t' ou 'x') ; null au-delà du dernier point.
+    function interpoler(points, cle, val) {
+        if (val <= points[0][cle]) return points[0];
+        for (let i = 1; i < points.length; i++) {
+            if (points[i][cle] >= val) {
+                const a = points[i - 1], b = points[i], f = (val - a[cle]) / ((b[cle] - a[cle]) || 1);
+                return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, v: a.v + (b.v - a.v) * f, t: a.t + (b.t - a.t) * f };
+            }
+        }
+        return null;
+    }
+
+    function rectArrondi(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+
+    function tracerGraphique(points, maxDist, targetDist, yTargetCm, texte, extra) {
+        derniersArgs = [points, maxDist, targetDist, yTargetCm, texte, extra];
+        extra = extra || {};
         const canvas = document.getElementById('trajectoryCanvas');
         const rect = canvas.getBoundingClientRect();
         
         // Ajustement netteté écran retina/haute résolution
         canvas.width = rect.width * window.devicePixelRatio || 1150;
-        canvas.height = 480 * window.devicePixelRatio || 480;
+        const h = rect.height || 440;
+        canvas.height = h * (window.devicePixelRatio || 1);
         const ctx = canvas.getContext('2d');
         ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
         const w = rect.width;
-        const h = 480;
-        const padL = 70, padR = 30, padT = 30, padB = 40;
+        const narrow = w < 500;
+        const padL = narrow ? 58 : 66, padR = narrow ? 12 : 22, padT = 18, padB = 40;
+        const F = '"Roboto Condensed", "sans-serif-condensed", "Bahnschrift", "Arial Narrow", system-ui, sans-serif';
         const plotW = w - padL - padR;
         const plotH = h - padT - padB;
 
@@ -543,10 +839,11 @@
         // Grille et graduation Y
         ctx.strokeStyle = C('--grid');
         ctx.fillStyle = C('--axis');
-        ctx.font = '11px sans-serif';
+        ctx.font = '11px ' + F;
         ctx.lineWidth = 1;
 
         const stepY = pas(maxY - minY, 8);
+        const enMetres = (maxY - minY) >= 600;
         for (let valY = Math.ceil(minY / stepY) * stepY; valY <= maxY + 1e-9; valY += stepY) {
             const sy = toScreenY(valY);
             ctx.beginPath();
@@ -555,7 +852,7 @@
             ctx.stroke();
 
             ctx.textAlign = 'right';
-            ctx.fillText(+valY.toFixed(2) + ' cm', padL - 8, sy + 4);
+            ctx.fillText(enMetres ? +(valY / 100).toFixed(2) + ' m' : +valY.toFixed(2) + ' cm', padL - 8, sy + 4);
         }
 
         // Grille et graduation X
@@ -568,16 +865,29 @@
             ctx.stroke();
 
             ctx.textAlign = 'center';
-            ctx.fillText(+vx.toFixed(2), sx, h - padB + 16);
-            ctx.fillText('m', sx, h - padB + 29);
+            ctx.fillText(+vx.toFixed(2), sx, h - padB + 17);
         }
+        ctx.textAlign = 'right';
+        ctx.fillText('distance (m)', w - padR, h - 6);
 
         ctx.save();
         ctx.beginPath();
         ctx.rect(padL, padT, plotW, plotH);
         ctx.clip();
-        // Ligne de visée (Y = 0)
         const zeroYScreen = toScreenY(0);
+        const portee = mode === 'portee';
+
+        // Sol (mode portée) : bande sous la hauteur du canon.
+        if (portee) {
+            ctx.fillStyle = C('--ground');
+            ctx.fillRect(padL, zeroYScreen, plotW, h - padB - zeroYScreen);
+            ctx.strokeStyle = C('--ground-line'); ctx.lineWidth = 1;
+            for (let gx = padL - (toScreenX(0) % 9); gx < w - padR; gx += 9) {
+                ctx.beginPath(); ctx.moveTo(gx, zeroYScreen + 1); ctx.lineTo(gx - 4, zeroYScreen + 6); ctx.stroke();
+            }
+        }
+
+        // Ligne de visée (Y = 0)
         ctx.strokeStyle = C('--sight');
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 6]);
@@ -587,69 +897,153 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Courbe de trajectoire
-        ctx.strokeStyle = C('--curve');
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        points.forEach((p, idx) => {
-            const sx = toScreenX(p.x);
-            const sy = toScreenY(p.y);
-            if (idx === 0) ctx.moveTo(sx, sy);
-            else ctx.lineTo(sx, sy);
-        });
-        ctx.stroke();
+        // Partie déjà parcourue par le plomb (toute la courbe hors animation).
+        const tMax = points[points.length - 1].t || 0;
+        const tCut = animP * tMax;
+        const tete = animP < 1 ? interpoler(points, 't', tCut) || points[points.length - 1] : points[points.length - 1];
+        const vus = points.filter(p => p.t <= tCut || animP >= 1);
+        if (animP < 1) vus.push(tete);
 
-        // Impact visé (mode portée) : ligne verticale
-        if (cibleX != null) {
-            const cx = toScreenX(cibleX);
-            ctx.strokeStyle = C('--impact');
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 5]);
-            ctx.beginPath();
-            ctx.moveTo(cx, padT);
-            ctx.lineTo(cx, h - padB);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.fillStyle = C('--impact-text');
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = cx > padL + plotW * 0.85 ? 'right' : 'left';
-            ctx.fillText(`Impact visé ${cibleX} m`, cx + (cx > padL + plotW * 0.85 ? -4 : 4), padT + 12);
+        // Zone teintée entre la courbe et la ligne de visée / le sol.
+        ctx.globalAlpha = 0.10;
+        ctx.fillStyle = C('--curve');
+        ctx.beginPath();
+        ctx.moveTo(toScreenX(vus[0].x), zeroYScreen);
+        vus.forEach(p => ctx.lineTo(toScreenX(p.x), toScreenY(p.y)));
+        ctx.lineTo(toScreenX(vus[vus.length - 1].x), zeroYScreen);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Courbe colorée selon l'énergie restante : chaude au départ, froide quand le plomb s'essouffle.
+        const chaud = C('--hot'), milieu = C('--brass-strong'), froid = C('--curve');
+        const teinte = f => f < 0.5 ? melanger(chaud, milieu, f * 2) : melanger(milieu, froid, (f - 0.5) * 2);
+        const v0c = points[0].v || 1, perteMax = Math.max(1e-6, 1 - Math.pow(points[points.length - 1].v / v0c, 2));
+        ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        for (let i = 1; i < vus.length; i++) {
+            const a = vus[i - 1], b = vus[i];
+            const f = Math.min(1, (1 - Math.pow(b.v / v0c, 2)) / perteMax);
+            ctx.strokeStyle = teinte(f);
+            ctx.beginPath(); ctx.moveTo(toScreenX(a.x), toScreenY(a.y)); ctx.lineTo(toScreenX(b.x), toScreenY(b.y)); ctx.stroke();
         }
 
-        // Point impact à la cible
-        const tX = toScreenX(targetDist);
-        const tY = toScreenY(yTargetCm);
-        if (targetDist <= maxX && targetDist >= minX) {
+        const tX = toScreenX(targetDist), tY = toScreenY(yTargetCm);
+        const cibleVisible = targetDist <= maxX && targetDist >= minX;
+        const cibleAtteinte = animP >= 1 || tete.x >= targetDist;
+        const droite = targetDist > minX + (maxX - minX) * 0.8;
+
+        if (!portee) {
+            // Repère du zéro sur la ligne de visée.
+            const z = extra.zeroDist;
+            if (z != null && z >= minX && z <= maxX) {
+                const zx = toScreenX(z);
+                ctx.fillStyle = C('--chart-bg'); ctx.strokeStyle = C('--sight'); ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(zx, zeroYScreen, 5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = C('--axis'); ctx.font = '600 11px ' + F; ctx.textAlign = 'center';
+                ctx.fillText(`zéro ${+z.toFixed(1)} m`, zx, zeroYScreen + (yTargetCm < 0 ? -12 : 20));
+            }
+            // Cible (blason) posée sur la ligne de visée, à la distance de tir.
+            if (cibleVisible) {
+                const anneaux = [[17, C('--chart-bg')], [12.5, C('--ink')], [9, C('--chart-bg')], [5, C('--sight')]];
+                anneaux.forEach(([r, c]) => {
+                    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(tX, zeroYScreen, r, 0, 2 * Math.PI); ctx.fill();
+                });
+                ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.arc(tX, zeroYScreen, 17, 0, 2 * Math.PI); ctx.stroke();
+            }
+        } else {
+            // Sommet de la trajectoire, affiché quand le plomb l'a passé.
+            const sommet = points.reduce((m, p) => p.y > m.y ? p : m, points[0]);
+            if (sommet.y > 0 && sommet.t <= tCut + 1e-9) {
+                const sx = toScreenX(sommet.x), sy = toScreenY(sommet.y);
+                ctx.strokeStyle = C('--axis'); ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+                ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, zeroYScreen); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = C('--curve'); ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 2 * Math.PI); ctx.fill();
+                ctx.fillStyle = C('--axis'); ctx.font = '600 11px ' + F; ctx.textAlign = 'center';
+                ctx.fillText(`sommet ${(sommet.y / 100).toFixed(2)} m`, sx, Math.max(padT + 12, sy - 10));
+            }
+        }
+
+        // Impact : point et écart à la cible (visée), gerbe de terre (portée).
+        if (cibleVisible && cibleAtteinte) {
+            if (portee) {
+                ctx.strokeStyle = C('--impact'); ctx.lineWidth = 2; ctx.lineCap = 'round';
+                [-60, -35, -12, 12, 35, 60].forEach((deg, i) => {
+                    const r = deg * Math.PI / 180, L = i % 2 ? 9 : 13;
+                    ctx.beginPath();
+                    ctx.moveTo(tX + Math.sin(r) * 4, zeroYScreen - Math.cos(r) * 4);
+                    ctx.lineTo(tX + Math.sin(r) * L, zeroYScreen - Math.cos(r) * L);
+                    ctx.stroke();
+                });
+            } else if (Math.abs(tY - zeroYScreen) > 6) {
+                ctx.strokeStyle = C('--impact'); ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+                ctx.beginPath(); ctx.moveTo(tX, zeroYScreen); ctx.lineTo(tX, tY); ctx.stroke(); ctx.setLineDash([]);
+            }
             ctx.fillStyle = C('--impact');
             ctx.beginPath();
             ctx.arc(tX, tY, 6, 0, 2 * Math.PI);
             ctx.fill();
+            ctx.strokeStyle = C('--chart-bg'); ctx.lineWidth = 2; ctx.stroke();
 
-            // Label impact
-            ctx.fillStyle = C('--impact-text');
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = targetDist > minX + (maxX - minX) * 0.8 ? 'right' : 'left';
-            ctx.fillText(texte || `Cible: ${yTargetCm.toFixed(1)} cm`, tX + (targetDist > minX + (maxX - minX) * 0.8 ? -10 : 10), tY - 10);
+            // L'étiquette attend la fin du tir pour ne pas chevaucher le chrono du plomb.
+            if (animP >= 1) {
+                ctx.fillStyle = C('--impact-text');
+                ctx.font = 'bold 13px ' + F;
+                ctx.textAlign = droite ? 'right' : 'left';
+                const etiquette = texte || `Cible : ${yTargetCm >= 0 ? '+' : ''}${yTargetCm.toFixed(1)} cm`;
+                ctx.fillText(etiquette, tX + (droite ? -22 : 22), tY + (portee ? -18 : (yTargetCm < 0 ? 18 : -10)));
+            }
+        }
+
+        // Plomb en vol : traînée lumineuse, plomb et chrono.
+        if (animP < 1) {
+            const traine = vus.filter(p => p.t >= tCut - tMax * 0.08);
+            if (traine.length > 1) {
+                ctx.strokeStyle = chaud; ctx.globalAlpha = 0.35; ctx.lineWidth = 8;
+                ctx.beginPath();
+                traine.forEach((p, i) => i ? ctx.lineTo(toScreenX(p.x), toScreenY(p.y)) : ctx.moveTo(toScreenX(p.x), toScreenY(p.y)));
+                ctx.stroke(); ctx.globalAlpha = 1;
+            }
+            const px = toScreenX(tete.x), py = toScreenY(tete.y);
+            ctx.shadowColor = C('--brass-strong'); ctx.shadowBlur = 14;
+            ctx.fillStyle = C('--brass-strong');
+            ctx.beginPath(); ctx.arc(px, py, 5.5, 0, 2 * Math.PI); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = C('--ink'); ctx.font = 'bold 12px ' + F;
+            const chrono = `${tete.t.toFixed(2)} s · ${tete.v.toFixed(0)} m/s`;
+            const aGauche = px + 10 + ctx.measureText(chrono).width > w - padR - 4;
+            ctx.textAlign = aGauche ? 'right' : 'left';
+            ctx.fillText(chrono, px + (aGauche ? -10 : 10), Math.max(padT + 12, py - 12));
+        }
+
+        // Lecture au doigt : repère vertical, point sur la courbe et fiche de valeurs.
+        const lu = sonde != null && animP >= 1 ? interpoler(points, 'x', sonde) : null;
+        if (lu && sonde >= minX && sonde <= maxX) {
+            const sx = toScreenX(lu.x), sy = toScreenY(lu.y);
+            ctx.strokeStyle = C('--axis'); ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(sx, padT); ctx.lineTo(sx, h - padB); ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = C('--chart-bg'); ctx.strokeStyle = C('--ink'); ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.arc(sx, sy, 5.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+
+            const m = extra.massKg || 0;
+            const hauteur = portee
+                ? `${(lu.y / 100).toFixed(2)} m du sol`
+                : `${lu.y >= 0 ? '+' : ''}${lu.y.toFixed(1)} cm / visée`;
+            const lignes = [`${lu.x.toFixed(1)} m`, hauteur, `${lu.v.toFixed(0)} m/s · ${lu.t.toFixed(2)} s`, `${(0.5 * m * lu.v * lu.v).toFixed(1)} J`];
+            ctx.font = '600 12px ' + F;
+            const lw = Math.max(...lignes.map(l => ctx.measureText(l).width)) + 20, lh = lignes.length * 17 + 10;
+            let bx = sx + 12; if (bx + lw > w - padR - 4) bx = sx - 12 - lw;
+            const by = padT + 8;
+            ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--line'); ctx.lineWidth = 1;
+            rectArrondi(ctx, bx, by, lw, lh, 8); ctx.fill(); ctx.stroke();
+            ctx.textAlign = 'left';
+            lignes.forEach((l, i) => {
+                ctx.fillStyle = i === 0 ? C('--ink') : C('--muted');
+                ctx.font = (i === 0 ? 'bold 13px ' : '600 12px ') + F;
+                ctx.fillText(l, bx + 10, by + 20 + i * 17);
+            });
         }
 
         ctx.restore();
-        // Légende
-        ctx.fillStyle = C('--curve');
-        ctx.fillRect(w - 220, 10, 15, 4);
-        ctx.fillStyle = C('--text');
-        ctx.textAlign = 'left';
-        ctx.font = '12px sans-serif';
-        ctx.fillText('Trajectoire plomb', w - 195, 15);
-
-        ctx.strokeStyle = C('--sight');
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(w - 220, 25);
-        ctx.lineTo(w - 205, 25);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillText(mode === 'portee' ? 'Sol (hauteur du canon)' : 'Ligne de visée (0)', w - 195, 29);
     }
 
     // --- Zoom / déplacement tactile (pincer, glisser, molette, double-tap) ---
@@ -693,7 +1087,8 @@
     (function initZoom() {
         const cv = document.getElementById('trajectoryCanvas');
         const ptrs = new Map();
-        let distPrec = 0, dernierTap = 0;
+        let distPrec = 0, dernierTap = 0, depart = null;
+        const placerSonde = px => { if (!carte) return; sonde = pixelVersDonnees(px, 0).x; redessiner(); };
         const local = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
         const centre = () => { const a = [...ptrs.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; };
         cv.addEventListener('pointerdown', e => {
@@ -701,17 +1096,20 @@
             ptrs.set(e.pointerId, local(e));
             if (ptrs.size === 2) distPrec = centre().d;
             if (ptrs.size === 1) {
+                depart = local(e);
                 const now = Date.now();
-                if (now - dernierTap < 300) { resetZoom(); dernierTap = 0; } else dernierTap = now;
+                if (now - dernierTap < 300) { sonde = null; resetZoom(); dernierTap = 0; depart = null; } else dernierTap = now;
             }
         });
         cv.addEventListener('pointermove', e => {
-            if (!ptrs.has(e.pointerId)) return;
+            // Souris sans clic : la lecture suit le curseur.
+            if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') placerSonde(local(e).x); return; }
             const prev = ptrs.get(e.pointerId), cur = local(e);
             if (ptrs.size === 1) {
                 if (Math.hypot(cur.x - prev.x, cur.y - prev.y) > 2) dernierTap = 0;
                 ptrs.set(e.pointerId, cur);
-                deplacer(cur.x - prev.x, cur.y - prev.y);
+                // Zoomé, un doigt déplace la vue ; sinon il fait glisser la lecture le long de la courbe.
+                if (vue) deplacer(cur.x - prev.x, cur.y - prev.y); else placerSonde(cur.x);
             } else if (ptrs.size === 2) {
                 const avant = centre();
                 ptrs.set(e.pointerId, cur);
@@ -721,7 +1119,15 @@
                 distPrec = apres.d;
             }
         });
-        const fin = e => { ptrs.delete(e.pointerId); distPrec = 0; };
+        const fin = e => {
+            // Simple toucher : lecture à cet endroit.
+            if (e.type === 'pointerup' && ptrs.size === 1 && depart) {
+                const p = local(e);
+                if (Math.hypot(p.x - depart.x, p.y - depart.y) < 6) placerSonde(p.x);
+            }
+            ptrs.delete(e.pointerId); distPrec = 0; depart = null;
+        };
+        cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { sonde = null; redessiner(); } });
         cv.addEventListener('pointerup', fin);
         cv.addEventListener('pointercancel', fin);
         cv.addEventListener('wheel', e => {
@@ -733,7 +1139,7 @@
 
     // Simple redessin : relancer le calcul ici écrasait la saisie en cours (le clavier mobile déclenche un resize).
     window.addEventListener('resize', redessiner);
-       const CHAMPS = ['caliber','shape','massGr','massG','energy','velocity','unitVel','scopeHeight','inclinaison','zeroDist','targetDist','maxDist'];
+    const CHAMPS = ['caliber','shape','bc','massGr','massG','energy','velocity','unitVel','scopeHeight','inclinaison','zeroDist','targetDist','maxDist'];
     function sauver() {
         try {
             const d = {};
@@ -749,6 +1155,8 @@
         try {
             const d = JSON.parse(localStorage.getItem('balistique') || '{}');
             CHAMPS.forEach(id => { if (d[id] !== undefined) document.getElementById(id).value = d[id]; });
+            // Réglages enregistrés avant l'ajout du champ BC : on reprend la valeur typique.
+            if (d.bc === undefined) bcParDefaut();
             if (d.pilote === 'angle' && d.porteeAngle != null) { document.getElementById('porteeAngle').value = d.porteeAngle; pilote = 'angle'; }
             else if (d.pilote === 'impact' && d.porteeCible != null) { document.getElementById('porteeCible').value = d.porteeCible; pilote = 'impact'; }
         } catch (e) {}
@@ -761,7 +1169,7 @@
     }
     function appliquerTheme(t) {
         document.documentElement.setAttribute('data-theme', t);
-        document.getElementById('themeToggle').textContent = t === 'dark' ? '☀️ Clair' : '🌙 Sombre';
+        document.getElementById('themeToggle').setAttribute('aria-label', t === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre');
     }
     function basculerTheme() {
         const t = themeActuel() === 'dark' ? 'light' : 'dark';
