@@ -15,6 +15,7 @@
             --chart-bg: #FBFCFA; --grid: #DEE3DD; --axis: #5E6964;
             --curve: #1D6B76; --sight: #B03A2E; --impact: #B03A2E; --impact-text: #8A2B21;
             --hot: #D9572B; --ground: #E3DDCB; --ground-line: #B9AE8C;
+            --green: #2E7D4F; --green-soft: #D8EEDF; --on-green: #FFFFFF;
             --shadow: 0 1px 0 rgba(23,32,28,.04), 0 8px 24px -12px rgba(23,32,28,.18);
         }
         :root[data-theme="dark"] {
@@ -25,6 +26,7 @@
             --chart-bg: #161B1E; --grid: #252D32; --axis: #8D9993;
             --curve: #6FC6D1; --sight: #F07B6B; --impact: #F07B6B; --impact-text: #F6A598;
             --hot: #FF9A5C; --ground: #262A22; --ground-line: #4A5040;
+            --green: #4CC38A; --green-soft: #1C3527; --on-green: #0E1F15;
             --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.7);
         }
 
@@ -235,11 +237,13 @@
         .save-btn {
             appearance: none; cursor: pointer; margin: 10px 0 0 6px; min-height: 36px; padding: 0 14px 0 11px;
             display: inline-flex; align-items: center; gap: 7px; vertical-align: middle; border-radius: 999px;
-            border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+            border: 1px solid transparent; background: var(--green); color: var(--on-green);
             font: 700 .9rem/1 var(--font); letter-spacing: .02em; transition: background-color .15s, color .15s;
+            box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--green) 70%, transparent);
         }
-        .save-btn svg { width: 15px; height: 15px; color: var(--brass); }
-        .save-btn.ok { background: var(--brass-soft); color: var(--brass); border-color: transparent; }
+        .save-btn svg { width: 15px; height: 15px; }
+        .save-btn:active { transform: scale(.95); }
+        .save-btn.ok { background: var(--green-soft); color: var(--green); box-shadow: none; }
         .count {
             min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
             background: var(--brass-strong); color: #FFFFFF; font: 700 .7rem/18px var(--font); text-align: center;
