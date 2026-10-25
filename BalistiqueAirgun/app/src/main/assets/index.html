@@ -37,6 +37,7 @@
             -webkit-tap-highlight-color: transparent;
         }
         .mode-portee .visee-only, .mode-visee .portee-only { display: none !important; }
+        .mode-calculs .layout, .mode-visee .calculs-only, .mode-portee .calculs-only { display: none !important; }
 
         /* ---------- Barre d'en-tête ---------- */
         .appbar {
@@ -214,7 +215,10 @@
             .brand { order: 1; }
             .icon-btn { order: 2; }
             .segmented { order: 3; flex: 1 1 100%; }
-            .segmented button { flex: 1; justify-content: center; }
+            .segmented button { flex: 1; justify-content: center; padding: 9px 8px; }
+            .calculs { padding: 12px; }
+            .calc-top { flex-wrap: wrap; }
+            .calc-date { order: 3; flex-basis: 100%; }
             .layout { padding: 12px; gap: 12px; }
             .inputs { padding: 4px 14px 14px; }
             .readout { grid-template-columns: minmax(0, 1fr); }
@@ -227,6 +231,52 @@
             .legend { order: 3; flex-basis: 100%; gap: 6px 14px; }
             canvas { height: 360px; }
         }
+        /* ---------- Enregistrement ---------- */
+        .save-btn {
+            appearance: none; cursor: pointer; margin: 10px 0 0 6px; min-height: 36px; padding: 0 14px 0 11px;
+            display: inline-flex; align-items: center; gap: 7px; vertical-align: middle; border-radius: 999px;
+            border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+            font: 700 .9rem/1 var(--font); letter-spacing: .02em; transition: background-color .15s, color .15s;
+        }
+        .save-btn svg { width: 15px; height: 15px; color: var(--brass); }
+        .save-btn.ok { background: var(--brass-soft); color: var(--brass); border-color: transparent; }
+        .count {
+            min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+            background: var(--brass-strong); color: #FFFFFF; font: 700 .7rem/18px var(--font); text-align: center;
+        }
+        :root[data-theme="dark"] .count { color: #1B1408; }
+        .count:empty { display: none; }
+
+        .calculs { max-width: 900px; margin: 0 auto; padding: 16px; }
+        .calculs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 2px 14px; }
+        .calculs-head h2 { margin: 0; font: 700 1.1rem var(--font); }
+        .calculs-list { display: grid; gap: 12px; }
+        .empty { padding: 36px 20px; text-align: center; color: var(--muted); }
+        .empty p { margin: 4px 0; }
+        .calc { padding: 14px 16px; display: grid; gap: 10px; }
+        .calc-top { display: flex; align-items: center; gap: 10px; }
+        .badge {
+            flex: 0 0 auto; padding: 4px 10px; border-radius: 999px;
+            background: var(--brass-soft); color: var(--brass); font: 700 .78rem/1.2 var(--font); letter-spacing: .03em;
+        }
+        .calc-name {
+            flex: 1; min-width: 0; min-height: 36px; padding: 4px 8px; border-color: transparent; background: transparent;
+            font: 700 1rem var(--font);
+        }
+        .calc-name:hover { border-color: var(--line); }
+        .calc-date { flex: 0 0 auto; font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .calc-main { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+        .calc-main strong { font: 700 1.5rem/1.1 var(--font); font-variant-numeric: tabular-nums; }
+        .calc-main span { font: 700 .95rem var(--font); color: var(--brass); }
+        .calc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0 20px; margin: 0; }
+        .calc-grid div { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: .82rem; }
+        .calc-grid dt { color: var(--muted); }
+        .calc-grid dd { margin: 0; white-space: nowrap; font: 700 .9rem var(--font); font-variant-numeric: tabular-nums; text-align: right; }
+        .calc-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .calc-actions .ghost-btn { min-height: 38px; }
+        .ghost-btn.danger { color: var(--impact-text); }
+        .ghost-btn.danger.arme { background: var(--impact); color: #FFFFFF; border-color: transparent; }
+
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
 </head>
@@ -253,6 +303,10 @@
         <button id="btnPortee" type="button" onclick="setMode('portee')">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M1 13.5C4 3 10 3 15 13.5"/><path d="M1 14.5h14"/></svg>
             Portée
+        </button>
+        <button id="btnCalculs" type="button" onclick="setMode('calculs')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 1.5h10v13l-5-3.5-5 3.5z"/></svg>
+            Calculs <span class="count" id="nbCalculs"></span>
         </button>
     </div>
     <button id="themeToggle" class="icon-btn" type="button" onclick="basculerTheme()" aria-label="Changer de thème">
@@ -366,6 +420,7 @@
                 <div class="dial-label">Viser à la cible</div>
                 <div class="dial-value" id="resAimCorrection">0 cm</div>
                 <div class="dial-sub" id="resMoa">0 MOA</div>
+                <button type="button" class="save-btn" onclick="enregistrer(this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 1.5h10v13l-5-3.5-5 3.5z"/></svg><span>Enregistrer</span></button>
             </div>
             <dl class="stats">
                 <div class="stat-card"><dt class="stat-label">Vitesse à la cible</dt><dd class="stat-value" id="resVTarget">0 m/s</dd></div>
@@ -380,6 +435,7 @@
                 <div class="dial-label">Portée du plomb</div>
                 <div class="dial-value" id="resRange">0 m</div>
                 <div class="dial-sub" id="resAngleCible">-</div>
+                <button type="button" class="save-btn" onclick="enregistrer(this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 1.5h10v13l-5-3.5-5 3.5z"/></svg><span>Enregistrer</span></button>
             </div>
             <dl class="stats">
                 <div class="stat-card"><dt class="stat-label">Temps de vol</dt><dd class="stat-value" id="resRangeTime">0 s</dd></div>
@@ -414,6 +470,13 @@
             </div>
         </div>
     </section>
+</main>
+
+<main class="calculs calculs-only" aria-label="Calculs enregistrés">
+    <div class="calculs-head">
+        <h2>Calculs enregistrés</h2>
+    </div>
+    <div class="calculs-list" id="listeCalculs"></div>
 </main>
 
 <script>
@@ -728,8 +791,11 @@
         document.getElementById('btnPortee').classList.toggle('active', m === 'portee');
         document.getElementById('btnVisee').setAttribute('aria-selected', m === 'visee');
         document.getElementById('btnPortee').setAttribute('aria-selected', m === 'portee');
-        document.getElementById('titre').textContent = m === 'portee' ? 'Portée du plomb' : 'Correction de visée';
+        document.getElementById('btnCalculs').classList.toggle('active', m === 'calculs');
+        document.getElementById('btnCalculs').setAttribute('aria-selected', m === 'calculs');
+        document.getElementById('titre').textContent = m === 'portee' ? 'Portée du plomb' : m === 'calculs' ? 'Calculs enregistrés' : 'Correction de visée';
         try { localStorage.setItem('balistique_mode', m); } catch (e) {}
+        if (m === 'calculs') { afficherCalculs(); window.scrollTo(0, 0); return; }
         calculer('vel');
         lancerTir();
     }
@@ -1163,6 +1229,111 @@
     }
     document.addEventListener('input', sauver);
     document.addEventListener('change', sauver);
+    // ---------- Calculs enregistrés ----------
+    // Chaque calcul garde ses réglages (pour le recharger) et le texte des résultats tel qu'affiché.
+    const CLE_CALCULS = 'balistique_calculs';
+    function lireCalculs() {
+        try { const l = JSON.parse(localStorage.getItem(CLE_CALCULS) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; }
+    }
+    function ecrireCalculs(l) {
+        try { localStorage.setItem(CLE_CALCULS, JSON.stringify(l)); } catch (e) {}
+        document.getElementById('nbCalculs').textContent = l.length || '';
+    }
+    const txt = id => document.getElementById(id).innerText;
+    const val = id => document.getElementById(id).value;
+    function enregistrer(btn) {
+        const reglages = {};
+        CHAMPS.forEach(id => reglages[id] = val(id));
+        reglages.pilote = pilote;
+        reglages.porteeAngle = val('porteeAngle');
+        reglages.porteeCible = val('porteeCible');
+        const c = { id: Date.now(), date: new Date().toISOString(), mode, reglages };
+        if (mode === 'portee') {
+            c.nom = `Portée à ${parseFloat(reglages.porteeAngle).toFixed(1)}°`;
+            c.principal = txt('resRange');
+            c.secondaire = txt('resAngleCible');
+            c.stats = [['Temps de vol', txt('resRangeTime')], ['Hauteur max', txt('resApex')], ["Vitesse à l'impact", txt('resVImpact')], ["Énergie à l'impact", txt('resEImpact')]];
+        } else {
+            c.nom = `Cible à ${reglages.targetDist} m`;
+            c.principal = txt('resAimCorrection');
+            c.secondaire = txt('resMoa');
+            c.stats = [['Vitesse à la cible', txt('resVTarget')], ['Énergie départ / cible', txt('resE0')], ['Temps de vol', txt('resTTarget')]];
+        }
+        const l = lireCalculs();
+        l.unshift(c);
+        ecrireCalculs(l);
+        const lib = btn.querySelector('span');
+        btn.classList.add('ok'); lib.textContent = 'Enregistré ✓';
+        clearTimeout(btn._t);
+        btn._t = setTimeout(() => { btn.classList.remove('ok'); lib.textContent = 'Enregistrer'; }, 1600);
+    }
+    function echapper(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+    const NOMS_PROFILS = { flat: 'Tête plate', pointed: 'Tête pointue', domed: 'Tête ronde', slug: 'Slug' };
+    function afficherCalculs() {
+        const l = lireCalculs(), zone = document.getElementById('listeCalculs');
+        document.getElementById('nbCalculs').textContent = l.length || '';
+        if (!l.length) {
+            zone.innerHTML = `<div class="panel empty"><p><strong>Aucun calcul enregistré.</strong></p><p>Touchez « Enregistrer » sous un résultat de l'onglet Visée ou Portée.</p></div>`;
+            return;
+        }
+        zone.innerHTML = l.map(c => {
+            const r = c.reglages || {};
+            const vitesse = `${r.velocity} ${r.unitVel === 'fps' ? 'fps' : 'm/s'}`;
+            const params = [
+                ['Calibre', `${r.caliber} mm`], ['Profil', NOMS_PROFILS[r.shape] || r.shape], ['BC', r.bc],
+                ['Masse', `${r.massGr} gr / ${r.massG} g`], ['Vitesse', vitesse], ['Énergie', `${r.energy} J`]
+            ].concat(c.mode === 'portee'
+                ? [['Angle', `${parseFloat(r.porteeAngle).toFixed(2)}°`]]
+                : [['Zéro', `${r.zeroDist} m`], ['Cible', `${r.targetDist} m`], ['Hauteur lunette', `${r.scopeHeight} cm`], ['Pente', `${r.inclinaison}°`]]);
+            const lignes = params.concat(c.stats || []).map(([k, v]) => `<div><dt>${echapper(k)}</dt><dd>${echapper(v)}</dd></div>`).join('');
+            const d = new Date(c.date);
+            const quand = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            return `<article class="panel calc">
+                <div class="calc-top">
+                    <span class="badge">${c.mode === 'portee' ? 'Portée' : 'Visée'}</span>
+                    <input class="calc-name" value="${echapper(c.nom)}" aria-label="Nom du calcul" onchange="renommerCalcul(${c.id}, this.value)">
+                    <span class="calc-date">${quand}</span>
+                </div>
+                <div class="calc-main"><strong>${echapper(c.principal)}</strong><span>${echapper(c.secondaire)}</span></div>
+                <dl class="calc-grid">${lignes}</dl>
+                <div class="calc-actions">
+                    <button type="button" class="ghost-btn danger" onclick="supprimerCalcul(${c.id}, this)">Supprimer</button>
+                    <button type="button" class="ghost-btn" onclick="rechargerCalcul(${c.id})">Recharger</button>
+                </div>
+            </article>`;
+        }).join('');
+    }
+    function renommerCalcul(id, nom) {
+        const l = lireCalculs(), c = l.find(x => x.id === id);
+        if (c) { c.nom = nom.trim() || c.nom; ecrireCalculs(l); }
+    }
+    // Pas de boîte de confirmation dans la WebView : il faut toucher « Supprimer » deux fois.
+    function supprimerCalcul(id, btn) {
+        if (!btn.classList.contains('arme')) {
+            btn.classList.add('arme'); btn.textContent = 'Confirmer';
+            setTimeout(() => { btn.classList.remove('arme'); btn.textContent = 'Supprimer'; }, 3000);
+            return;
+        }
+        ecrireCalculs(lireCalculs().filter(x => x.id !== id));
+        afficherCalculs();
+    }
+    function rechargerCalcul(id) {
+        const c = lireCalculs().find(x => x.id === id);
+        if (!c) return;
+        const r = c.reglages || {};
+        CHAMPS.forEach(k => { if (r[k] !== undefined) document.getElementById(k).value = r[k]; });
+        if (c.mode === 'portee') {
+            document.getElementById('porteeAngle').value = r.porteeAngle;
+            document.getElementById('porteeCible').value = r.porteeCible;
+            pilote = r.pilote === 'impact' ? 'impact' : 'angle';
+        }
+        sauver();
+        setMode(c.mode === 'portee' ? 'portee' : 'visee');
+        window.scrollTo(0, 0);
+    }
+
     function themeActuel() {
         try { const s = localStorage.getItem('balistique_theme'); if (s === 'dark' || s === 'light') return s; } catch (e) {}
         return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -1175,13 +1346,14 @@
         const t = themeActuel() === 'dark' ? 'light' : 'dark';
         try { localStorage.setItem('balistique_theme', t); } catch (e) {}
         appliquerTheme(t);
-        calculer('vel');
+        if (mode !== 'calculs') calculer('vel');
     }
     window.onload = function() {
         appliquerTheme(themeActuel());
         charger();
         let m = 'visee';
-        try { if (localStorage.getItem('balistique_mode') === 'portee') m = 'portee'; } catch (e) {}
+        try { const s = localStorage.getItem('balistique_mode'); if (s === 'portee' || s === 'calculs') m = s; } catch (e) {}
+        document.getElementById('nbCalculs').textContent = lireCalculs().length || '';
         setMode(m);
     };
 </script>
